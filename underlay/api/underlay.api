@@ -1,0 +1,14 @@
+public final class com/timkrest/underlay/UnderlayKt {
+	public static final fun blurredUnderlay-hU4bJlM (Landroidx/compose/ui/Modifier;FJJLkotlin/jvm/functions/Function1;Landroidx/compose/runtime/Composer;II)Landroidx/compose/ui/Modifier;
+}
+
+public final class com/timkrest/underlay/UnderlaySource : java/lang/Enum {
+	public static final field Fallback Lcom/timkrest/underlay/UnderlaySource;
+	public static final field Pending Lcom/timkrest/underlay/UnderlaySource;
+	public static final field Snapshot Lcom/timkrest/underlay/UnderlaySource;
+	public static final field SystemBlur Lcom/timkrest/underlay/UnderlaySource;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/timkrest/underlay/UnderlaySource;
+	public static fun values ()[Lcom/timkrest/underlay/UnderlaySource;
+}
+

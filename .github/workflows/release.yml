@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, without the leading v
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: maven-central
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          validate-wrappers: true
+
+      # Both inputs are attacker-controlled text. They reach the shell as environment variables so a
+      # quote cannot escape into the script, and the first case rejects the whole word at once -
+      # grep would anchor per line and wave a multi-line value through on its first line alone.
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${INPUT_VERSION:-${REF_NAME#v}}"
+          case "$version" in
+            '' | *[!0-9A-Za-z.-]*)
+              echo "::error::version has characters outside 0-9 A-Z a-z . -"
+              exit 1
+              ;;
+            *SNAPSHOT*)
+              echo "::error::refusing to release a snapshot: $version"
+              exit 1
+              ;;
+          esac
+          if ! printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::not a release version: $version"
+            exit 1
+          fi
+          echo "name=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check
+        run: ./gradlew ktlintCheck apiCheck :underlay:testDebugUnitTest :underlay:lintRelease
+
+      # publishToMavenCentral only uploads to staging; this one also releases.
+      - name: Publish
+        env:
+          ORG_GRADLE_PROJECT_VERSION_NAME: ${{ steps.version.outputs.name }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache

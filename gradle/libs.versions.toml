@@ -1,0 +1,62 @@
+[versions]
+agp = "8.13.2"
+kotlin = "2.4.10"
+coroutines = "1.11.0"
+composeBom = "2026.06.01"
+activity = "1.13.0"
+annotation = "1.9.1"
+coreKtx = "1.17.0"
+junit4 = "4.13.2"
+androidxTest = "1.7.0"
+androidxTestJunit = "1.3.0"
+espresso = "3.7.0"
+binaryCompatibilityValidator = "0.18.0"
+ktlint = "14.2.0"
+mavenPublish = "0.33.0"
+
+androidMinSdk = "24"
+androidCompileSdk = "36"
+
+# Run Gradle on JDK 21 and publish Java 11 bytecode.
+jvmToolchain = "21"
+jvmTarget = "11"
+
+[libraries]
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTest" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestJunit" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+
+# Dependencies of the convention plugins in build-logic.
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+mavenPublish-gradlePlugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
+ktlint-gradlePlugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+
+underlay-android-application = { id = "underlay.android.application" }
+underlay-android-library = { id = "underlay.android.library" }
+underlay-publish = { id = "underlay.publish" }

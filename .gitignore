@@ -1,0 +1,58 @@
+*.iml
+.gradle/
+.kotlin/
+.idea/
+.vscode/
+out/
+build/
+captures/
+bin/
+gen/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# Local tool state — whoever clones this brings their own
+.claude/
+.codex/
+.cursor/
+.junie/
+.kiro/
+.windsurf/
+.continue/
+.aider*
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+
+# Profiler and tooling output
+*.hprof
+*.log
+.gradletasknamecache
+
+# Signing and secrets — never in a public repository
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+.env
+
+# Built artifacts, in case one is produced outside build/
+*.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+
+# The wrapper is committed on purpose; a global *.jar rule must not swallow it
+!gradle/wrapper/gradle-wrapper.jar
+
+# Files other people's machines leave behind
+.DS_Store
+._*
+.AppleDouble
+Thumbs.db
+Desktop.ini
+.directory
+*~
+*.swp
