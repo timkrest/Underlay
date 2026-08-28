@@ -1,9 +1,15 @@
 package com.timkrest.underlay
 
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Popup
+import androidx.core.content.getSystemService
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -12,10 +18,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-/**
- * Which windows the modifier resolves from each place it can be called. No window of its own means
- * nothing to blur; no reachable host means nothing to snapshot.
- */
 @RunWith(AndroidJUnit4::class)
 class UnderlayWindowsTest {
 
@@ -25,7 +27,7 @@ class UnderlayWindowsTest {
     @Test
     fun anOverlayInsideTheActivityWindowOwnsNoWindowAndHasNoHost() {
         lateinit var windows: UnderlayWindows
-        compose.setContent { windows = rememberUnderlayWindows() }
+        compose.setContent { windows = underlayWindows() }
         compose.waitForIdle()
 
         assertNull(windows.overlay, "an in-window overlay must not claim a window of its own")
@@ -36,7 +38,7 @@ class UnderlayWindowsTest {
     fun aDialogOwnsItsWindowAndSeesTheActivityUnderneath() {
         lateinit var windows: UnderlayWindows
         compose.setContent {
-            Dialog(onDismissRequest = {}) { windows = rememberUnderlayWindows() }
+            Dialog(onDismissRequest = {}) { windows = underlayWindows() }
         }
         compose.waitForIdle()
 
@@ -48,7 +50,7 @@ class UnderlayWindowsTest {
     fun aPopupOwnsItsRootViewAndSeesTheActivityUnderneath() {
         lateinit var windows: UnderlayWindows
         compose.setContent {
-            Popup { windows = rememberUnderlayWindows() }
+            Popup { windows = underlayWindows() }
         }
         compose.waitForIdle()
 
@@ -58,4 +60,11 @@ class UnderlayWindowsTest {
         )
         assertSame(compose.activity.window, windows.host)
     }
+
+    @Composable
+    private fun underlayWindows(): UnderlayWindows = resolveUnderlayWindows(
+        view = LocalView.current,
+        activity = LocalActivity.current,
+        windowManager = LocalContext.current.getSystemService<WindowManager>(),
+    )
 }

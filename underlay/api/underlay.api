@@ -1,5 +1,6 @@
 public final class com/timkrest/underlay/UnderlayKt {
-	public static final fun blurredUnderlay-hU4bJlM (Landroidx/compose/ui/Modifier;FJJLkotlin/jvm/functions/Function1;Landroidx/compose/runtime/Composer;II)Landroidx/compose/ui/Modifier;
+	public static final fun blurredUnderlay-6Ivg_Sk (Landroidx/compose/ui/Modifier;FJJLcom/timkrest/underlay/UnderlayState;Lkotlin/jvm/functions/Function1;)Landroidx/compose/ui/Modifier;
+	public static synthetic fun blurredUnderlay-6Ivg_Sk$default (Landroidx/compose/ui/Modifier;FJJLcom/timkrest/underlay/UnderlayState;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Landroidx/compose/ui/Modifier;
 }
 
 public final class com/timkrest/underlay/UnderlaySource : java/lang/Enum {
@@ -10,5 +11,15 @@ public final class com/timkrest/underlay/UnderlaySource : java/lang/Enum {
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/timkrest/underlay/UnderlaySource;
 	public static fun values ()[Lcom/timkrest/underlay/UnderlaySource;
+}
+
+public final class com/timkrest/underlay/UnderlayState {
+	public static final field $stable I
+	public fun <init> ()V
+	public final fun refresh ()V
+}
+
+public final class com/timkrest/underlay/UnderlayStateKt {
+	public static final fun rememberUnderlayState (Landroidx/compose/runtime/Composer;I)Lcom/timkrest/underlay/UnderlayState;
 }
 

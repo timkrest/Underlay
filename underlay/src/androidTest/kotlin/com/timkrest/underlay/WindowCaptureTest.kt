@@ -20,10 +20,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import android.graphics.Color as PixelColor
 
-/**
- * The capture on whichever path this API level takes: `PixelCopy` from API 26, a software
- * `decorView.draw()` below it. Neither is reachable from a JVM test.
- */
+/** Runs on a device: neither `PixelCopy` nor `decorView.draw()` is reachable from a JVM test. */
 @RunWith(AndroidJUnit4::class)
 class WindowCaptureTest {
 

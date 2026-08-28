@@ -19,11 +19,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
-/**
- * Which step the modifier reaches, end to end through the public API. Every branch here is decided
- * by the device: the API level, and whether the system has cross-window blur switched on at all.
- */
+/** Which source wins is decided by the device, not the API level - hence the assumptions. */
 @RunWith(AndroidJUnit4::class)
 class UnderlaySourceTest {
 
@@ -32,35 +30,42 @@ class UnderlaySourceTest {
 
     @Test
     fun anOverlayInsideTheActivityWindowReportsTheFallback() {
-        val source = awaitSource(overlay = { content -> content() }) { it == UnderlaySource.Fallback }
+        val reported = awaitSource(overlay = { content -> content() }) { it == UnderlaySource.Fallback }
 
-        assertEquals(UnderlaySource.Fallback, source)
+        assertEquals(UnderlaySource.Fallback, reported.last())
     }
 
     @Test
-    fun aDialogNeverSettlesOnTheFallback() {
-        awaitSource(overlay = { content -> Dialog(onDismissRequest = {}) { content() } }) { it.isBackdrop() }
+    fun aDialogNeverReportsTheFallback() {
+        val reported = awaitSource(overlay = { content -> Dialog(onDismissRequest = {}) { content() } }) {
+            it.isBackdrop()
+        }
+
+        assertFalse(UnderlaySource.Fallback in reported, "a dialog has a backdrop from the first report on")
     }
 
     @Test
     fun withoutSystemBlurADialogFallsThroughToTheSnapshot() {
         assumeTrue("the system blurs behind the window here", !isCrossWindowBlurEnabled())
 
-        val source = awaitSource(overlay = { content -> Dialog(onDismissRequest = {}) { content() } }) { it.isBackdrop() }
+        val reported = awaitSource(overlay = { content -> Dialog(onDismissRequest = {}) { content() } }) {
+            it.isBackdrop()
+        }
 
-        assertEquals(UnderlaySource.Snapshot, source)
+        assertEquals(UnderlaySource.Snapshot, reported.last())
     }
 
     @Test
     fun withSystemBlurADialogUsesTheWindowFlag() {
         assumeTrue("cross-window blur is off on this device", isCrossWindowBlurEnabled())
 
-        val source = awaitSource(overlay = { content -> Dialog(onDismissRequest = {}) { content() } }) { it.isBackdrop() }
+        val reported = awaitSource(overlay = { content -> Dialog(onDismissRequest = {}) { content() } }) {
+            it.isBackdrop()
+        }
 
-        assertEquals(UnderlaySource.SystemBlur, source)
+        assertEquals(UnderlaySource.SystemBlur, reported.last())
     }
 
-    /** A step that actually draws something behind the overlay, as opposed to Pending or Fallback. */
     private fun UnderlaySource.isBackdrop(): Boolean =
         this == UnderlaySource.SystemBlur || this == UnderlaySource.Snapshot
 
@@ -71,14 +76,14 @@ class UnderlaySourceTest {
     }
 
     /**
-     * Waits for a reported step that [matches], in real time. A snapshot crosses a frame boundary,
-     * a `PixelCopy` callback and a background blur before it lands, so the first report is never the
-     * answer and the test clock has nothing to do with when it arrives.
+     * Collects every reported source until one [matches]. Real time, not the test clock: a snapshot
+     * waits for a frame boundary, a `PixelCopy` callback and a background blur before it lands, so
+     * the first report is never the answer.
      */
     private fun awaitSource(
         overlay: @Composable (content: @Composable () -> Unit) -> Unit,
         matches: (UnderlaySource) -> Boolean,
-    ): UnderlaySource {
+    ): List<UnderlaySource> {
         val reported = mutableListOf<UnderlaySource>()
 
         compose.setContent {
@@ -99,10 +104,10 @@ class UnderlaySourceTest {
         try {
             compose.waitUntil(TIMEOUT_MILLIS) { reported.lastOrNull()?.let(matches) == true }
         } catch (neverMatched: ComposeTimeoutException) {
-            throw AssertionError("no matching step within ${TIMEOUT_MILLIS}ms, reported $reported", neverMatched)
+            throw AssertionError("no matching source within ${TIMEOUT_MILLIS}ms, reported $reported", neverMatched)
         }
 
-        return reported.last()
+        return reported
     }
 
     private companion object {

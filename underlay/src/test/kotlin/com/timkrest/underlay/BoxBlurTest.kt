@@ -1,6 +1,7 @@
 package com.timkrest.underlay
 
 import org.junit.Test
+import kotlin.math.abs
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -9,16 +10,16 @@ import kotlin.test.assertTrue
 class BoxBlurTest {
 
     @Test
-    fun `sigma below one box pixel rounds to no blur`() {
+    fun `a sigma no box can approximate rounds to no blur`() {
         assertEquals(0, boxBlurRadiusForSigma(0f))
-        assertEquals(0, boxBlurRadiusForSigma(1f))
+        assertEquals(0, boxBlurRadiusForSigma(0.5f))
     }
 
     @Test
-    fun `sigma maps to the three-box approximation`() {
-        // box size = round(sigma * 3 * sqrt(2*pi) / 4), radius = (box size - 1) / 2.
-        assertEquals(1, boxBlurRadiusForSigma(2f))
-        assertEquals(11, boxBlurRadiusForSigma(12f))
+    fun `the radius lands on the nearest sigma three box passes can produce`() {
+        assertEquals(1, boxBlurRadiusForSigma(1f))
+        assertEquals(2, boxBlurRadiusForSigma(2f))
+        assertEquals(12, boxBlurRadiusForSigma(12f))
     }
 
     @Test
@@ -79,8 +80,7 @@ class BoxBlurTest {
 
     @Test
     fun `fully transparent pixels do not bleed their color`() {
-        // Alpha 0 with a color still in the channels is what an erased-then-drawn capture leaves
-        // behind. Averaging premultiplied means none of that color reaches the result.
+        // Alpha 0 with a color left in the channels is what an erased-then-drawn capture holds.
         val pixels = IntArray(8 * 8) { 0x00FF0000 }
 
         blurPixels(pixels, width = 8, height = 8, radius = 2)
@@ -100,6 +100,29 @@ class BoxBlurTest {
         val leftmost = pixels[size * (size / 2)]
         assertEquals(255, alpha(leftmost), "the far side of the opaque half must stay opaque")
         assertEquals(255, red(leftmost), "the far side of the opaque half must keep its color")
+    }
+
+    @Test
+    fun `the blur keeps the brightness it was given`() {
+        val size = 32
+        val pixels = IntArray(size * size) { index -> opaque(index % 256, index * 7 % 256, index * 13 % 256) }
+        val before = pixels.sumOf { red(it) }
+
+        blurPixels(pixels, width = size, height = size, radius = 7)
+
+        val drift = abs(pixels.sumOf { red(it) } - before).toDouble() / pixels.size
+        assertTrue(drift <= 1.0, "the blur shifted brightness by $drift levels per pixel")
+    }
+
+    @Test
+    fun `a uniform translucent image keeps its color`() {
+        val alpha = 10
+        val pixels = IntArray(16 * 16) { (alpha shl 24) or (100 shl 16) }
+
+        blurPixels(pixels, width = 16, height = 16, radius = 3)
+
+        val drift = abs(red(pixels.first()) - 100)
+        assertTrue(drift <= 3, "premultiplying moved the color by $drift levels")
     }
 
     @Test

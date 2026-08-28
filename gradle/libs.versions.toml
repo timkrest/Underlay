@@ -14,7 +14,7 @@ binaryCompatibilityValidator = "0.18.0"
 ktlint = "14.2.0"
 mavenPublish = "0.33.0"
 
-androidMinSdk = "24"
+androidMinSdk = "23"
 androidCompileSdk = "36"
 
 # Run Gradle on JDK 21 and publish Java 11 bytecode.

@@ -1,31 +1,36 @@
 package com.timkrest.underlay
 
-import kotlin.math.PI
-import kotlin.math.roundToInt
+import kotlin.math.abs
+import kotlin.math.floor
 import kotlin.math.sqrt
 
 private const val BLUR_PASSES = 3
+private const val BOX_VARIANCE_DIVISOR = 12f
 private const val ALPHA_SHIFT = 24
 private const val RED_SHIFT = 16
 private const val GREEN_SHIFT = 8
 private const val CHANNEL_MASK = 0xFF
 private const val OPAQUE = 0xFF
 
-private val SIGMA_TO_BOX_SIZE = (3.0 * sqrt(2.0 * PI) / 4.0).toFloat()
-
-/**
- * Box blur radius approximating a Gaussian of [sigma], via the SVG filter specification's three-box
- * approximation: `box size = sigma * 3 * sqrt(2*pi) / 4`. Returns 0 below one box pixel.
- */
+/** The box radius whose [BLUR_PASSES] passes land closest to a Gaussian of [sigma]. */
 internal fun boxBlurRadiusForSigma(sigma: Float): Int {
-    val boxSize = (sigma * SIGMA_TO_BOX_SIZE).roundToInt()
-    return ((boxSize - 1) / 2).coerceAtLeast(0)
+    if (sigma <= 0f) return 0
+
+    val window = sqrt(BOX_VARIANCE_DIVISOR * sigma * sigma / BLUR_PASSES + 1f)
+    val narrower = floor((window - 1f) / 2f).toInt().coerceAtLeast(0)
+    val wider = narrower + 1
+
+    return if (abs(sigmaOfRadius(narrower) - sigma) <= abs(sigmaOfRadius(wider) - sigma)) narrower else wider
+}
+
+private fun sigmaOfRadius(radius: Int): Float {
+    val window = 2f * radius + 1f
+    return sqrt((window * window - 1f) * BLUR_PASSES / BOX_VARIANCE_DIVISOR)
 }
 
 /**
- * Blurs [width] x [height] ARGB_8888 [pixels] in place with three box passes. The radius is clamped
- * to half the shorter side; 0 leaves them untouched. Channels are averaged premultiplied, so
- * non-opaque pixels do not bleed color into transparent neighbours.
+ * [BLUR_PASSES] box passes over ARGB_8888 [pixels], in place. Channels are averaged premultiplied,
+ * so a transparent neighbour does not bleed its color into the result.
  */
 internal fun blurPixels(pixels: IntArray, width: Int, height: Int, radius: Int) {
     require(width >= 0 && height >= 0) { "negative size ${width}x$height" }
@@ -38,48 +43,44 @@ internal fun blurPixels(pixels: IntArray, width: Int, height: Int, radius: Int) 
     premultiply(pixels)
 
     val buffer = IntArray(pixels.size)
-    val channels = ChannelSums()
     repeat(BLUR_PASSES) {
-        blurRows(pixels, buffer, width, height, blurRadius, channels)
-        blurColumns(buffer, pixels, width, height, blurRadius, channels)
+        blurRows(pixels, buffer, width, height, blurRadius)
+        blurColumns(buffer, pixels, width, height, blurRadius)
     }
 
     unpremultiply(pixels)
 }
 
-private fun blurRows(source: IntArray, target: IntArray, width: Int, height: Int, radius: Int, channels: ChannelSums) {
-    val window = radius * 2 + 1
-    val lastColumn = width - 1
+private fun blurRows(source: IntArray, target: IntArray, width: Int, height: Int, radius: Int) =
+    blurLines(source, target, lines = height, lineStride = width, length = width, pixelStride = 1, radius = radius)
 
-    for (y in 0 until height) {
-        val rowOffset = y * width
+private fun blurColumns(source: IntArray, target: IntArray, width: Int, height: Int, radius: Int) =
+    blurLines(source, target, lines = width, lineStride = 1, length = height, pixelStride = width, radius = radius)
+
+private fun blurLines(
+    source: IntArray,
+    target: IntArray,
+    lines: Int,
+    lineStride: Int,
+    length: Int,
+    pixelStride: Int,
+    radius: Int,
+) {
+    val window = radius * 2 + 1
+    val last = length - 1
+    val channels = ChannelSums()
+
+    for (line in 0 until lines) {
+        val start = line * lineStride
         channels.reset()
         for (offset in -radius..radius) {
-            channels.add(source[rowOffset + offset.coerceIn(0, lastColumn)])
+            channels.add(source[start + offset.coerceIn(0, last) * pixelStride])
         }
 
-        for (x in 0 until width) {
-            target[rowOffset + x] = channels.average(window)
-            channels.add(source[rowOffset + (x + radius + 1).coerceIn(0, lastColumn)])
-            channels.subtract(source[rowOffset + (x - radius).coerceIn(0, lastColumn)])
-        }
-    }
-}
-
-private fun blurColumns(source: IntArray, target: IntArray, width: Int, height: Int, radius: Int, channels: ChannelSums) {
-    val window = radius * 2 + 1
-    val lastRow = height - 1
-
-    for (x in 0 until width) {
-        channels.reset()
-        for (offset in -radius..radius) {
-            channels.add(source[offset.coerceIn(0, lastRow) * width + x])
-        }
-
-        for (y in 0 until height) {
-            target[y * width + x] = channels.average(window)
-            channels.add(source[(y + radius + 1).coerceIn(0, lastRow) * width + x])
-            channels.subtract(source[(y - radius).coerceIn(0, lastRow) * width + x])
+        for (index in 0 until length) {
+            target[start + index * pixelStride] = channels.average(window)
+            channels.add(source[start + (index + radius + 1).coerceIn(0, last) * pixelStride])
+            channels.subtract(source[start + (index - radius).coerceIn(0, last) * pixelStride])
         }
     }
 }
@@ -101,11 +102,11 @@ private inline fun scaleChannels(pixels: IntArray, scale: (channel: Int, alpha: 
 }
 
 private fun premultiply(pixels: IntArray) = scaleChannels(pixels) { channel, alpha ->
-    channel * alpha / CHANNEL_MASK
+    (channel * alpha + CHANNEL_MASK / 2) / CHANNEL_MASK
 }
 
 private fun unpremultiply(pixels: IntArray) = scaleChannels(pixels) { channel, alpha ->
-    (channel * CHANNEL_MASK / alpha).coerceAtMost(CHANNEL_MASK)
+    ((channel * CHANNEL_MASK + alpha / 2) / alpha).coerceAtMost(CHANNEL_MASK)
 }
 
 private class ChannelSums {
@@ -136,9 +137,12 @@ private class ChannelSums {
         blue -= pixel and CHANNEL_MASK
     }
 
-    fun average(window: Int): Int =
-        (alpha / window shl ALPHA_SHIFT) or
-            (red / window shl RED_SHIFT) or
-            (green / window shl GREEN_SHIFT) or
-            (blue / window)
+    /** Truncating instead would lose half a level on every pass and visibly darken the result. */
+    fun average(window: Int): Int {
+        val rounding = window / 2
+        return ((alpha + rounding) / window shl ALPHA_SHIFT) or
+            ((red + rounding) / window shl RED_SHIFT) or
+            ((green + rounding) / window shl GREEN_SHIFT) or
+            ((blue + rounding) / window)
+    }
 }

@@ -6,16 +6,53 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.view.Choreographer
 import android.view.PixelCopy
 import android.view.View
 import android.view.Window
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.withFrameNanos
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withSave
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 internal const val WINDOW_CAPTURE_DOWN_SCALE = 4
+
+private const val CAPTURE_ATTEMPTS = 3
+
+/**
+ * The window as it was last drawn, or null if no attempt succeeded. The buffer is recycled only
+ * after every attempt has returned, and not in a `finally`: a cancelled [captureInto] leaves a
+ * `PixelCopy` still writing into it, and recycling under that request crashes the framework.
+ */
+internal suspend fun Window.captureOnFrameBoundary(): Bitmap? {
+    var buffer: Bitmap? = null
+
+    repeat(CAPTURE_ATTEMPTS) {
+        withFrameNanos { }
+        awaitFrameDrawn()
+        val destination = buffer ?: createCaptureBitmap() ?: return@repeat
+        buffer = destination
+        if (captureInto(destination)) return destination
+    }
+
+    buffer?.recycle()
+    return null
+}
+
+/**
+ * Waits for the vsync after this one. Compose's clock ticks before a frame is drawn and a capture
+ * reads what the window last put on screen, so without this it would return the frame before the
+ * change that asked for it. A vsync also arrives when Compose has no more frames to draw.
+ */
+private suspend fun awaitFrameDrawn(): Unit = suspendCancellableCoroutine { continuation ->
+    val choreographer = Choreographer.getInstance()
+    val callback = Choreographer.FrameCallback { continuation.resume(Unit) }
+
+    choreographer.postFrameCallback(callback)
+    continuation.invokeOnCancellation { choreographer.removeFrameCallback(callback) }
+}
 
 internal fun Window.createCaptureBitmap(): Bitmap? {
     val view = decorView

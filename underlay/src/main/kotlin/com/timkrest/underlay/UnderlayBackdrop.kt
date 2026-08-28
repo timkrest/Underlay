@@ -1,51 +1,78 @@
 package com.timkrest.underlay
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.remember
+import android.view.WindowManager
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import kotlinx.coroutines.CoroutineScope
 
-@Immutable
-internal sealed interface UnderlayBackdrop {
+/** Picks where one overlay's blur comes from: the system flag while it is on, a snapshot otherwise. */
+internal class UnderlayBackdrop(
+    windows: UnderlayWindows,
+    windowManager: WindowManager?,
+    blur: SnapshotBlur,
+    scope: CoroutineScope,
+    private val onChange: () -> Unit,
+) {
+
+    private val systemBlur = systemBlurBehind(windows.overlay, windowManager, ::chooseSource)
+    private val snapshot = windows.host?.let { host -> HostSnapshot(host, blur, scope, onChange) }
+
+    private var radius: Dp = Dp.Hairline
+    private var density: Density = Density(1f)
+
+    val image: ImageBitmap? get() = snapshot?.image
 
     val source: UnderlaySource
-
-    data object SystemBlur : UnderlayBackdrop {
-        override val source: UnderlaySource = UnderlaySource.SystemBlur
-    }
-
-    class Snapshot(val image: ImageBitmap) : UnderlayBackdrop {
-        override val source: UnderlaySource = UnderlaySource.Snapshot
-    }
-
-    /**
-     * A snapshot is on its way. Only the tint is drawn, so the overlay settles from unblurred host
-     * content into the blurred snapshot rather than flashing an opaque fallback in between.
-     */
-    data object Pending : UnderlayBackdrop {
-        override val source: UnderlaySource = UnderlaySource.Pending
-    }
-
-    data object Unavailable : UnderlayBackdrop {
-        override val source: UnderlaySource = UnderlaySource.Fallback
-    }
-}
-
-@Composable
-internal fun rememberUnderlayBackdrop(windows: UnderlayWindows, blurRadius: Dp): UnderlayBackdrop {
-    val isWindowBlurred = rememberWindowBlurBehind(overlay = windows.overlay, radius = blurRadius)
-    val snapshot = rememberBlurredSnapshot(
-        host = if (isWindowBlurred) null else windows.host,
-        radius = blurRadius,
-    )
-
-    return remember(isWindowBlurred, snapshot) {
-        when {
-            isWindowBlurred -> UnderlayBackdrop.SystemBlur
-            snapshot is UnderlaySnapshot.Ready -> UnderlayBackdrop.Snapshot(snapshot.image)
-            snapshot is UnderlaySnapshot.Pending -> UnderlayBackdrop.Pending
-            else -> UnderlayBackdrop.Unavailable
+        get() = when {
+            systemBlur?.isEnabled == true -> UnderlaySource.SystemBlur
+            snapshot?.image != null -> UnderlaySource.Snapshot
+            snapshot == null || snapshot.hasFailed -> UnderlaySource.Fallback
+            else -> UnderlaySource.Pending
         }
+
+    fun start(radius: Dp, density: Density) {
+        this.radius = radius
+        this.density = density
+        chooseSource()
     }
+
+    fun reblur(radius: Dp, density: Density) {
+        this.radius = radius
+        this.density = density
+        if (systemBlur?.isEnabled == true) systemBlur.request(radiusPx()) else snapshot?.reblur(sigma())
+    }
+
+    fun recapture() {
+        if (systemBlur?.isEnabled == true) return
+
+        snapshot?.capture(sigma())
+    }
+
+    fun dropAndRecapture() {
+        snapshot?.discard()
+        recapture()
+        onChange()
+    }
+
+    fun release() {
+        systemBlur?.release()
+        snapshot?.discard()
+    }
+
+    private fun chooseSource() {
+        val systemBlur = systemBlur
+        if (systemBlur != null && systemBlur.isEnabled) {
+            systemBlur.request(radiusPx())
+            snapshot?.discard()
+        } else {
+            systemBlur?.withdraw()
+            snapshot?.capture(sigma())
+        }
+        onChange()
+    }
+
+    private fun radiusPx(): Int = with(density) { radius.roundToPx() }
+
+    private fun sigma(): Float = with(density) { radius.toPx() / WINDOW_CAPTURE_DOWN_SCALE }
 }
