@@ -17,20 +17,35 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.timkrest.underlay.UnderlaySource
+import com.timkrest.underlay.UnderlayState
+import com.timkrest.underlay.rememberUnderlayState
 
 @Composable
 internal fun OverlayHost(
     kind: OverlayKind?,
     blurRadius: Dp,
+    underlayState: UnderlayState,
     onSourceChange: (UnderlaySource) -> Unit,
+    onRefresh: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val card: @Composable (OverlayKind) -> Unit = { openKind ->
+        UnderlayCard(
+            kind = openKind,
+            blurRadius = blurRadius,
+            onDismiss = onDismiss,
+            onSourceChange = onSourceChange,
+            underlayState = underlayState,
+            onRefresh = onRefresh,
+        )
+    }
+
     when (kind) {
         null, OverlayKind.TranslucentActivity -> Unit
 
         OverlayKind.DialogWindow -> Dialog(onDismissRequest = onDismiss) {
             RemoveDialogDim()
-            UnderlayCard(kind, blurRadius, onDismiss, onSourceChange)
+            card(kind)
         }
 
         OverlayKind.PopupWindow -> Popup(
@@ -38,7 +53,7 @@ internal fun OverlayHost(
             onDismissRequest = onDismiss,
             properties = PopupProperties(focusable = true),
         ) {
-            UnderlayCard(kind, blurRadius, onDismiss, onSourceChange)
+            card(kind)
         }
 
         OverlayKind.SameWindow -> {
@@ -50,7 +65,7 @@ internal fun OverlayHost(
                     .background(Color.Black.copy(alpha = 0.35f)),
                 contentAlignment = Alignment.Center,
             ) {
-                UnderlayCard(kind, blurRadius, onDismiss, onSourceChange)
+                card(kind)
             }
         }
     }
@@ -73,7 +88,9 @@ private fun OverlayHostPreview() {
         OverlayHost(
             kind = OverlayKind.SameWindow,
             blurRadius = DEFAULT_BLUR_RADIUS,
+            underlayState = rememberUnderlayState(),
             onSourceChange = { },
+            onRefresh = { },
             onDismiss = { },
         )
     }

@@ -16,7 +16,7 @@ class TranslucentOverlayActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val blurRadius = intent.getIntExtra(EXTRA_BLUR_RADIUS, DEFAULT_BLUR_RADIUS.value.toInt()).dp
+        val blurRadius = intent.getFloatExtra(EXTRA_BLUR_RADIUS, DEFAULT_BLUR_RADIUS.value).dp
 
         setContent {
             SampleTheme {
@@ -40,6 +40,6 @@ class TranslucentOverlayActivity : ComponentActivity() {
 
         fun intent(context: Context, blurRadius: Dp): Intent =
             Intent(context, TranslucentOverlayActivity::class.java)
-                .putExtra(EXTRA_BLUR_RADIUS, blurRadius.value.toInt())
+                .putExtra(EXTRA_BLUR_RADIUS, blurRadius.value)
     }
 }

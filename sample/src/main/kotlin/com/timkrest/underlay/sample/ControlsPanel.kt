@@ -23,6 +23,7 @@ import com.timkrest.underlay.UnderlaySource
 import kotlin.math.roundToInt
 
 private const val BUTTONS_PER_ROW = 2
+private val OVERLAY_ROWS = OverlayKind.entries.chunked(BUTTONS_PER_ROW)
 private const val BATTERY_SAVER_HINT =
     "Battery Saver switches cross-window blur off. Turn it on to watch this fall through to Snapshot."
 
@@ -30,7 +31,7 @@ private const val BATTERY_SAVER_HINT =
 internal fun ControlsPanel(
     blurRadius: Dp,
     overlaySource: UnderlaySource?,
-    areTilesHardware: Boolean,
+    areTilesHardware: Boolean?,
     onBlurRadiusChange: (Dp) -> Unit,
     onOpen: (OverlayKind) -> Unit,
     modifier: Modifier = Modifier,
@@ -51,10 +52,10 @@ internal fun ControlsPanel(
             BlurRadiusRow(blurRadius = blurRadius, overlaySource = overlaySource)
             Slider(
                 value = blurRadius.value,
-                onValueChange = { onBlurRadiusChange(it.roundToInt().dp) },
+                onValueChange = { onBlurRadiusChange(it.dp) },
                 valueRange = 0f..MAX_BLUR_RADIUS.value,
             )
-            Hint(text = tilesHint(areTilesHardware))
+            tilesHint(areTilesHardware)?.let { hint -> Hint(text = hint) }
             if (overlaySource == UnderlaySource.SystemBlur) {
                 Hint(text = BATTERY_SAVER_HINT)
             }
@@ -81,7 +82,7 @@ private fun BlurRadiusRow(blurRadius: Dp, overlaySource: UnderlaySource?) {
 @Composable
 private fun OverlayKindButtons(onOpen: (OverlayKind) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OverlayKind.entries.chunked(BUTTONS_PER_ROW).forEach { row ->
+        OVERLAY_ROWS.forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { kind ->
                     FilledTonalButton(
@@ -105,8 +106,11 @@ private fun Hint(text: String) {
     )
 }
 
-private fun tilesHint(areTilesHardware: Boolean): String =
-    if (areTilesHardware) "Tiles: hardware bitmaps" else "Tiles: software bitmaps"
+private fun tilesHint(areTilesHardware: Boolean?): String? = when (areTilesHardware) {
+    null -> null
+    true -> "Tiles: hardware bitmaps"
+    false -> "Tiles: software bitmaps"
+}
 
 @Preview
 @Composable

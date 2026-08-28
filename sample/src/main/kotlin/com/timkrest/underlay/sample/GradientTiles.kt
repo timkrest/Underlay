@@ -8,12 +8,15 @@ import android.graphics.Shader
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val TILE_SIZE = 512
 private const val CIRCLES_PER_TILE = 5
@@ -33,10 +36,20 @@ private val GRADIENTS = listOf(
 @Immutable
 internal class GradientTiles(val images: List<ImageBitmap>, val areHardware: Boolean)
 
+/** Null until the tiles are ready: drawing eight of them is too much to do while a frame waits. */
 @Composable
-internal fun rememberGradientTiles(): GradientTiles = remember {
+internal fun rememberGradientTiles(): GradientTiles? {
+    val tiles by produceState<GradientTiles?>(null) {
+        value = withContext(Dispatchers.Default) { gradientTiles() }
+    }
+
+    return tiles
+}
+
+internal fun gradientTiles(): GradientTiles {
     val bitmaps = GRADIENTS.mapIndexed { index, (start, end) -> gradientTile(index, start, end) }
-    GradientTiles(
+
+    return GradientTiles(
         images = bitmaps.map { it.asImageBitmap() },
         areHardware = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             bitmaps.all { it.config == Bitmap.Config.HARDWARE },

@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,11 +28,21 @@ import androidx.compose.ui.unit.dp
 
 private const val TILE_REPEATS = 4
 private const val BANNER_EVERY = 7
+private val TILE_SHAPE = RoundedCornerShape(20.dp)
 private const val SQUARE_RATIO = 1f
 private const val BANNER_RATIO = 2.1f
+private val TILE_SCRIM = Brush.verticalGradient(
+    0.55f to Color.Transparent,
+    1f to Color.Black.copy(alpha = 0.55f),
+)
 
 @Composable
-internal fun Backdrop(tiles: GradientTiles, contentPadding: PaddingValues, modifier: Modifier = Modifier) {
+internal fun Backdrop(
+    tiles: GradientTiles,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+    shift: Int = 0,
+) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = modifier.fillMaxSize(),
@@ -43,7 +54,7 @@ internal fun Backdrop(tiles: GradientTiles, contentPadding: PaddingValues, modif
             count = tiles.images.size * TILE_REPEATS,
             span = { index -> GridItemSpan(if (index.isBanner()) maxLineSpan else 1) },
         ) { index ->
-            BackdropTile(index = index, image = tiles.images[index % tiles.images.size])
+            BackdropTile(index = index, image = tiles.images[(index + shift) % tiles.images.size])
         }
     }
 }
@@ -53,7 +64,7 @@ private fun BackdropTile(index: Int, image: ImageBitmap) {
     Box(
         modifier = Modifier
             .aspectRatio(if (index.isBanner()) BANNER_RATIO else SQUARE_RATIO)
-            .clip(RoundedCornerShape(20.dp)),
+            .clip(TILE_SHAPE),
     ) {
         Image(
             bitmap = image,
@@ -64,12 +75,7 @@ private fun BackdropTile(index: Int, image: ImageBitmap) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        0.55f to Color.Transparent,
-                        1f to Color.Black.copy(alpha = 0.55f),
-                    ),
-                ),
+                .background(TILE_SCRIM),
         )
         Text(
             text = "Frame ${index + 1}",
@@ -89,7 +95,7 @@ private fun Int.isBanner(): Boolean = this % BANNER_EVERY == BANNER_EVERY - 1
 private fun BackdropPreview() {
     SampleTheme {
         Backdrop(
-            tiles = rememberGradientTiles(),
+            tiles = remember { gradientTiles() },
             contentPadding = PaddingValues(12.dp),
         )
     }

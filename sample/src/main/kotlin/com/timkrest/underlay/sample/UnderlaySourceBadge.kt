@@ -72,7 +72,7 @@ private fun UnderlaySourceBadgePreview() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            UnderlaySource.entries.forEach { source -> UnderlaySourceBadge(source) }
+            for (source in UnderlaySource.entries) UnderlaySourceBadge(source)
             UnderlaySourceBadge(source = null, placeholder = "No overlay")
         }
     }

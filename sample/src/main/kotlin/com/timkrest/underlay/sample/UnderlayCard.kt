@@ -3,6 +3,7 @@ package com.timkrest.underlay.sample
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,30 +23,36 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.timkrest.underlay.UnderlaySource
+import com.timkrest.underlay.UnderlayState
 import com.timkrest.underlay.blurredUnderlay
 import kotlin.math.roundToInt
 
 private val CARD_SHAPE = RoundedCornerShape(28.dp)
 private val CARD_TINT = Color.Black.copy(alpha = 0.28f)
 private val CARD_WIDTH = 320.dp
+private const val DISABLED_ALPHA = 0.38f
 
 @Composable
 internal fun UnderlayCard(
     kind: OverlayKind,
     blurRadius: Dp,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     onSourceChange: (UnderlaySource) -> Unit = { },
+    underlayState: UnderlayState? = null,
+    onRefresh: (() -> Unit)? = null,
 ) {
     var source by remember { mutableStateOf<UnderlaySource?>(null) }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .width(CARD_WIDTH)
             .clip(CARD_SHAPE)
             .blurredUnderlay(
                 blurRadius = blurRadius,
                 tint = CARD_TINT,
                 fallback = MaterialTheme.colorScheme.surface,
+                state = underlayState,
                 onSourceChange = {
                     source = it
                     onSourceChange(it)
@@ -71,11 +78,22 @@ internal fun UnderlayCard(
             color = Color.White.copy(alpha = 0.76f),
             style = MaterialTheme.typography.bodySmall,
         )
-        TextButton(
-            onClick = onDismiss,
+        Row(
             modifier = Modifier.align(Alignment.End),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(text = "Close", color = Color.White)
+            if (onRefresh != null) {
+                val hasHostWindow = kind != OverlayKind.SameWindow
+                TextButton(onClick = onRefresh, enabled = hasHostWindow) {
+                    Text(
+                        text = "Shuffle backdrop",
+                        color = Color.White.copy(alpha = if (hasHostWindow) 1f else DISABLED_ALPHA),
+                    )
+                }
+            }
+            TextButton(onClick = onDismiss) {
+                Text(text = "Close", color = Color.White)
+            }
         }
     }
 }
@@ -88,6 +106,7 @@ private fun UnderlayCardPreview() {
             kind = OverlayKind.DialogWindow,
             blurRadius = DEFAULT_BLUR_RADIUS,
             onDismiss = { },
+            onRefresh = { },
         )
     }
 }
