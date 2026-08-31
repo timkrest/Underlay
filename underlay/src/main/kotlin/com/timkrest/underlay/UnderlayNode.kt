@@ -68,6 +68,9 @@ internal class UnderlayNode(
         layer = null
         blur = null
         reportedSource = null
+        windowManager = null
+        activity = null
+        configuration = null
     }
 
     override fun onObservedReadsChanged() {
