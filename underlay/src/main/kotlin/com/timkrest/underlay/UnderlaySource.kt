@@ -18,7 +18,7 @@ public enum class UnderlaySource {
     /**
      * A snapshot of the host window, blurred and drawn under the tint. Needs a host window that is
      * not the overlay's own. A re-capture that fails keeps the snapshot already on screen, unless
-     * the host resized and it no longer fits.
+     * the host resized and it no longer fits - that one drops through [Pending] instead.
      */
     Snapshot,
 

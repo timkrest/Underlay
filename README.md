@@ -149,8 +149,9 @@ checked on every build.
 - **The snapshot is frozen.** It captures the host window once, again when that window changes size
   or configuration, and on `UnderlayState.refresh()`. Content moving underneath is not picked up on
   its own; for a popup over a scrolling list use an in-window library. A failed re-capture keeps the
-  snapshot on screen, unless the host resized and the old frame no longer lines up — then
-  `fallback` is drawn until a capture succeeds.
+  snapshot on screen, unless the host resized and the old frame no longer lines up — then the
+  snapshot is dropped and only the tint is drawn until a capture succeeds, and `fallback` only if
+  none does.
 - **`FLAG_BLUR_BEHIND` is a window flag.** `SystemBlur` blurs everything behind the overlay window;
   `Snapshot` blurs only what is behind the composable. Apply the modifier to a composable that fills
   the overlay window to get the same picture from both.
