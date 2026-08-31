@@ -20,6 +20,7 @@ internal class UnderlayBackdrop(
 
     private var radius: Dp = Dp.Hairline
     private var density: Density = Density(1f)
+    private var isSystemBlurChosen: Boolean? = null
 
     val image: ImageBitmap? get() = snapshot?.image
 
@@ -62,6 +63,10 @@ internal class UnderlayBackdrop(
 
     private fun chooseSource() {
         val systemBlur = systemBlur
+        val isEnabled = systemBlur?.isEnabled == true
+        if (isEnabled == isSystemBlurChosen) return
+
+        isSystemBlurChosen = isEnabled
         if (systemBlur != null && systemBlur.isEnabled) {
             systemBlur.request(radiusPx())
             snapshot?.discard()
