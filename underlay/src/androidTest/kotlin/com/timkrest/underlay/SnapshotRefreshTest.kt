@@ -88,7 +88,8 @@ class SnapshotRefreshTest {
         assertTrue(
             screen.colorAt(backdropOnScreen).matches(Color.Red),
             "the snapshot changed without a refresh: backdrop at $backdropOnScreen is " +
-                "${screen.colorAt(backdropOnScreen)}, host at $hostOnScreen is ${screen.colorAt(hostOnScreen)}",
+                "${screen.colorAt(backdropOnScreen)}, host at $hostOnScreen is ${screen.colorAt(hostOnScreen)}, " +
+                "reported $reported",
         )
     }
 
