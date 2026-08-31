@@ -68,14 +68,14 @@ class SnapshotRefreshTest {
         awaitHostOf(Color.Red)
         openTheOverlay()
         awaitTheFirstSnapshot()
-        awaitBackdropOf(Color.Red)
+        awaitBackdropOf(Color.Red.tinted())
 
         hostColor = Color.Blue
         assertTheHostTurnedBlueButItsSnapshotDidNot()
 
         compose.runOnUiThread { underlay.refresh() }
 
-        awaitBackdropOf(Color.Blue)
+        awaitBackdropOf(Color.Blue.tinted())
     }
 
     private fun assertTheHostTurnedBlueButItsSnapshotDidNot() {
@@ -86,7 +86,7 @@ class SnapshotRefreshTest {
         }
 
         assertTrue(
-            screen.colorAt(backdropOnScreen).matches(Color.Red),
+            screen.colorAt(backdropOnScreen).matches(Color.Red.tinted()),
             "the snapshot changed without a refresh: backdrop at $backdropOnScreen is " +
                 "${screen.colorAt(backdropOnScreen)}, host at $hostOnScreen is ${screen.colorAt(hostOnScreen)}, " +
                 "reported $reported",
@@ -142,7 +142,7 @@ class SnapshotRefreshTest {
                 .reportCenterOnScreen { backdropOnScreen = it }
                 .blurredUnderlay(
                     blurRadius = 0.dp,
-                    tint = Color.Transparent,
+                    tint = TINT,
                     fallback = Color.Green,
                     state = underlay,
                     onSourceChange = { reported += it },
@@ -157,6 +157,12 @@ class SnapshotRefreshTest {
         SideEffect { window?.setDimAmount(0f) }
     }
 
+    private fun Color.tinted(): Color = Color(
+        red = TINT.red * TINT.alpha + red * (1f - TINT.alpha),
+        green = TINT.green * TINT.alpha + green * (1f - TINT.alpha),
+        blue = TINT.blue * TINT.alpha + blue * (1f - TINT.alpha),
+    )
+
     /** A round trip through the GPU is not always bit exact. */
     private fun Color.matches(other: Color): Boolean =
         abs(red - other.red) <= CHANNEL_TOLERANCE &&
@@ -165,6 +171,7 @@ class SnapshotRefreshTest {
 
     private companion object {
         const val CHANNEL_TOLERANCE = 8f / 255f
+        val TINT = Color.Green.copy(alpha = 0.5f)
         val BACKDROP_SIZE = 120.dp
         val HOST_PROBE_INSET = 16.dp
         val HOST_PROBE_SIZE = 24.dp
