@@ -14,6 +14,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
@@ -79,7 +80,7 @@ class UnderlaySourceTest {
         this == UnderlaySource.SystemBlur || this == UnderlaySource.Snapshot
 
     private fun awaitSource(overlay: Overlay, matches: (UnderlaySource) -> Boolean): List<UnderlaySource> {
-        val reported = mutableListOf<UnderlaySource>()
+        val reported = CopyOnWriteArrayList<UnderlaySource>()
 
         compose.setContent {
             overlay {
@@ -100,6 +101,6 @@ class UnderlaySourceTest {
             reported.lastOrNull()?.let(matches) == true
         }
 
-        return reported
+        return reported.toList()
     }
 }

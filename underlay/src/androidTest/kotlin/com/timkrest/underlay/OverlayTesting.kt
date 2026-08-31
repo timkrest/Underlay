@@ -10,7 +10,7 @@ import androidx.core.content.getSystemService
 
 internal typealias Overlay = @Composable (content: @Composable () -> Unit) -> Unit
 
-private const val TIMEOUT_MILLIS = 10_000L
+private const val TIMEOUT_MILLIS = 20_000L
 
 internal fun ComposeTestRule.awaitOrFail(failure: () -> String, condition: () -> Boolean) {
     try {

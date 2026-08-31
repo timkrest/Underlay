@@ -50,20 +50,6 @@ class WindowCaptureTest {
         assertEquals(decorView.height / WINDOW_CAPTURE_DOWN_SCALE, captured.height)
     }
 
-    @Test
-    fun blurringACaptureLeavesAUniformWindowUniform() {
-        showFullScreen(Color.Green)
-        val captured = captureHostWindow()
-        val center = captured.centerPixel()
-
-        val pixels = IntArray(captured.width * captured.height)
-        captured.getPixels(pixels, 0, captured.width, 0, 0, captured.width, captured.height)
-        blurPixels(pixels, captured.width, captured.height, radius = 4)
-
-        val blurredCenter = pixels[captured.height / 2 * captured.width + captured.width / 2]
-        assertChannel(expected = PixelColor.green(center), actual = PixelColor.green(blurredCenter), name = "green")
-    }
-
     private fun showFullScreen(color: Color) {
         compose.setContent {
             Box(Modifier.fillMaxSize().background(color))

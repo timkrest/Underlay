@@ -27,6 +27,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 import kotlin.test.assertTrue
 
@@ -39,10 +40,13 @@ class SnapshotRefreshTest {
     private var hostColor by mutableStateOf(Color.Red)
     private var isOverlayOpen by mutableStateOf(false)
     private val underlay = UnderlayState()
-    private val reported = mutableListOf<UnderlaySource>()
+    private val reported = CopyOnWriteArrayList<UnderlaySource>()
 
-    private var backdropOnScreen = Offset.Unspecified
-    private var hostOnScreen = Offset.Unspecified
+    @Volatile
+    private var backdropOnScreen: Offset? = null
+
+    @Volatile
+    private var hostOnScreen: Offset? = null
 
     private val popup: Overlay = { content -> Popup { content() } }
 
@@ -71,27 +75,34 @@ class SnapshotRefreshTest {
         awaitBackdropOf(Color.Red.tinted())
 
         hostColor = Color.Blue
-        assertTheHostTurnedBlueButItsSnapshotDidNot()
+        assertTheHostMovedOnWithout(itsSnapshot = Color.Red)
 
         compose.runOnUiThread { underlay.refresh() }
 
         awaitBackdropOf(Color.Blue.tinted())
+
+        hostColor = Color.Yellow
+        assertTheHostMovedOnWithout(itsSnapshot = Color.Blue)
     }
 
-    private fun assertTheHostTurnedBlueButItsSnapshotDidNot() {
+    private fun assertTheHostMovedOnWithout(itsSnapshot: Color) {
         lateinit var screen: Bitmap
-        compose.awaitOrFail({ "the host at $hostOnScreen never turned blue on screen" }) {
+        compose.awaitOrFail({ "the host at ${hostProbe()} never turned $hostColor on screen" }) {
             screen = screenshot()
-            screen.colorAt(hostOnScreen).matches(Color.Blue)
+            screen.colorAt(hostProbe()).matches(hostColor)
         }
 
         assertTrue(
-            screen.colorAt(backdropOnScreen).matches(Color.Red.tinted()),
-            "the snapshot changed without a refresh: backdrop at $backdropOnScreen is " +
-                "${screen.colorAt(backdropOnScreen)}, host at $hostOnScreen is ${screen.colorAt(hostOnScreen)}, " +
+            screen.colorAt(backdropProbe()).matches(itsSnapshot.tinted()),
+            "the snapshot followed the host without a refresh: backdrop at ${backdropProbe()} is " +
+                "${screen.colorAt(backdropProbe())}, host at ${hostProbe()} is ${screen.colorAt(hostProbe())}, " +
                 "reported $reported",
         )
     }
+
+    private fun hostProbe(): Offset = hostOnScreen ?: error("the host probe was never positioned")
+
+    private fun backdropProbe(): Offset = backdropOnScreen ?: error("the backdrop was never positioned")
 
     private fun showHostAndOverlay(overlay: Overlay) {
         compose.setContent {
@@ -122,7 +133,7 @@ class SnapshotRefreshTest {
 
     private fun awaitHostOf(color: Color) {
         compose.awaitOrFail({ "no $color host at $hostOnScreen" }) {
-            screenshot().colorAt(hostOnScreen).matches(color)
+            screenshot().colorAt(hostProbe()).matches(color)
         }
     }
 
@@ -132,7 +143,7 @@ class SnapshotRefreshTest {
         }
     }
 
-    private fun backdropColor(): Color = screenshot().colorAt(backdropOnScreen)
+    private fun backdropColor(): Color = screenshot().colorAt(backdropProbe())
 
     @Composable
     private fun Backdrop() {
