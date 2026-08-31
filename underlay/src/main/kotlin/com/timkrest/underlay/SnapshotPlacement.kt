@@ -6,6 +6,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -30,14 +31,16 @@ internal fun DrawScope.drawSnapshot(snapshot: ImageBitmap, originInHost: IntOffs
         snapshot = IntSize(snapshot.width, snapshot.height),
     ) ?: return
 
-    drawImage(
-        image = snapshot,
-        srcOffset = placement.source.topLeft,
-        srcSize = placement.source.size,
-        dstOffset = placement.destination.topLeft,
-        dstSize = placement.destination.size,
-        filterQuality = FilterQuality.Low,
-    )
+    clipRect {
+        drawImage(
+            image = snapshot,
+            srcOffset = placement.source.topLeft,
+            srcSize = placement.source.size,
+            dstOffset = placement.destination.topLeft,
+            dstSize = placement.destination.size,
+            filterQuality = FilterQuality.Low,
+        )
+    }
 }
 
 internal class SnapshotPlacement(val source: IntRect, val destination: IntRect)
