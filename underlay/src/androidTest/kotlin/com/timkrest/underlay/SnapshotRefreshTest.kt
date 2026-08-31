@@ -85,7 +85,11 @@ class SnapshotRefreshTest {
             screen.colorAt(hostOnScreen).matches(Color.Blue)
         }
 
-        assertTrue(screen.colorAt(backdropOnScreen).matches(Color.Red), "the snapshot changed without a refresh")
+        assertTrue(
+            screen.colorAt(backdropOnScreen).matches(Color.Red),
+            "the snapshot changed without a refresh: backdrop at $backdropOnScreen is " +
+                "${screen.colorAt(backdropOnScreen)}, host at $hostOnScreen is ${screen.colorAt(hostOnScreen)}",
+        )
     }
 
     private fun showHostAndOverlay(overlay: Overlay) {

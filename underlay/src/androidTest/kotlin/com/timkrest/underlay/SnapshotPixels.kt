@@ -1,12 +1,15 @@
 package com.timkrest.underlay
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalView
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlin.math.roundToInt
 
@@ -28,6 +31,14 @@ internal fun screenshot(): Bitmap {
 
 internal fun Bitmap.colorAt(point: Offset): Color = Color(getPixel(point.x.roundToInt(), point.y.roundToInt()))
 
-internal fun Modifier.reportCenterOnScreen(onCenter: (Offset) -> Unit): Modifier = onGloballyPositioned { coordinates ->
-    onCenter(coordinates.localToScreen(Offset(coordinates.size.width / 2f, coordinates.size.height / 2f)))
+@Composable
+internal fun Modifier.reportCenterOnScreen(onCenter: (Offset) -> Unit): Modifier {
+    val root = LocalView.current
+
+    return onGloballyPositioned { coordinates ->
+        val rootOnScreen = IntArray(2).also { root.getLocationOnScreen(it) }
+        val center = coordinates.positionInRoot() + Offset(coordinates.size.width / 2f, coordinates.size.height / 2f)
+
+        onCenter(Offset(rootOnScreen[0] + center.x, rootOnScreen[1] + center.y))
+    }
 }
