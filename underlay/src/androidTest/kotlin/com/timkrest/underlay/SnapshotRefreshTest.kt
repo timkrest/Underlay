@@ -23,7 +23,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.Popup
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Assume.assumeTrue
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -57,6 +57,9 @@ class SnapshotRefreshTest {
         }
     }
 
+    @After
+    fun letTheSystemBlurAgain() = compose.restoreTheSystemBlur()
+
     @Test
     fun aRefreshUnderAPopupBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(popup)
 
@@ -64,10 +67,7 @@ class SnapshotRefreshTest {
     fun aRefreshUnderADialogBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(undimmedDialog)
 
     private fun assertARefreshBringsTheHostWindowBack(overlay: Overlay) {
-        assumeTrue(
-            "the system blurs behind the window here, no snapshot is taken",
-            !compose.activity.isCrossWindowBlurEnabled(),
-        )
+        compose.takeTheSystemBlurOutOfTheLadder()
         showHostAndOverlay(overlay)
         awaitHostOf(Color.Red)
         openTheOverlay()

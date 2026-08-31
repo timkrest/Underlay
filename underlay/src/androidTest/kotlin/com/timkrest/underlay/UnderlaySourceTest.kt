@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Popup
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -28,6 +29,9 @@ class UnderlaySourceTest {
     private val inTheActivityWindow: Overlay = { content -> content() }
     private val dialog: Overlay = { content -> Dialog(onDismissRequest = {}) { content() } }
     private val popup: Overlay = { content -> Popup { content() } }
+
+    @After
+    fun letTheSystemBlurAgain() = compose.restoreTheSystemBlur()
 
     @Test
     fun anOverlayInsideTheActivityWindowReportsTheFallback() {
@@ -49,6 +53,14 @@ class UnderlaySourceTest {
     fun withoutSystemBlurAPopupFallsThroughToTheSnapshot() = assertTheSnapshotWins(popup)
 
     @Test
+    fun aDialogFallsThroughToTheSnapshotWhenTheSystemStopsBlurring() =
+        assertTheSnapshotTakesOverFrom(dialog)
+
+    @Test
+    fun aPopupFallsThroughToTheSnapshotWhenTheSystemStopsBlurring() =
+        assertTheSnapshotTakesOverFrom(popup)
+
+    @Test
     fun withSystemBlurADialogUsesTheWindowFlag() = assertTheWindowFlagWins(dialog)
 
     @Test
@@ -61,7 +73,7 @@ class UnderlaySourceTest {
     }
 
     private fun assertTheSnapshotWins(overlay: Overlay) {
-        assumeTrue("the system blurs behind the window here", !compose.activity.isCrossWindowBlurEnabled())
+        compose.takeTheSystemBlurOutOfTheLadder()
 
         val reported = awaitSource(overlay) { it.isBackdrop() }
 
@@ -69,17 +81,42 @@ class UnderlaySourceTest {
     }
 
     private fun assertTheWindowFlagWins(overlay: Overlay) {
-        assumeTrue("cross-window blur is off on this device", compose.activity.isCrossWindowBlurEnabled())
+        assumeTrue("cross-window blur is off on this device", isCrossWindowBlurEnabled())
 
         val reported = awaitSource(overlay) { it.isBackdrop() }
 
         assertEquals(UnderlaySource.SystemBlur, reported.last())
     }
 
+    private fun assertTheSnapshotTakesOverFrom(overlay: Overlay) {
+        assumeTrue("cross-window blur is off on this device", isCrossWindowBlurEnabled())
+
+        val reported = showUnderlay(overlay)
+        compose.awaitOrFail({ "no window flag, reported $reported" }) {
+            reported.lastOrNull() == UnderlaySource.SystemBlur
+        }
+
+        compose.takeTheSystemBlurOutOfTheLadder()
+
+        compose.awaitOrFail({ "the ladder never reached the snapshot, reported $reported" }) {
+            reported.lastOrNull() == UnderlaySource.Snapshot
+        }
+    }
+
     private fun UnderlaySource.isBackdrop(): Boolean =
         this == UnderlaySource.SystemBlur || this == UnderlaySource.Snapshot
 
     private fun awaitSource(overlay: Overlay, matches: (UnderlaySource) -> Boolean): List<UnderlaySource> {
+        val reported = showUnderlay(overlay)
+
+        compose.awaitOrFail({ "no matching source, reported $reported" }) {
+            reported.lastOrNull()?.let(matches) == true
+        }
+
+        return reported.toList()
+    }
+
+    private fun showUnderlay(overlay: Overlay): CopyOnWriteArrayList<UnderlaySource> {
         val reported = CopyOnWriteArrayList<UnderlaySource>()
 
         compose.setContent {
@@ -97,10 +134,6 @@ class UnderlaySourceTest {
             }
         }
 
-        compose.awaitOrFail({ "no matching source, reported $reported" }) {
-            reported.lastOrNull()?.let(matches) == true
-        }
-
-        return reported.toList()
+        return reported
     }
 }
