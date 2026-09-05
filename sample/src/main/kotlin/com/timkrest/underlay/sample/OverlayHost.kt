@@ -16,7 +16,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.timkrest.underlay.UnderlaySource
 import com.timkrest.underlay.UnderlayState
 import com.timkrest.underlay.rememberUnderlayState
 
@@ -25,7 +24,6 @@ internal fun OverlayHost(
     kind: OverlayKind?,
     blurRadius: Dp,
     underlayState: UnderlayState,
-    onSourceChange: (UnderlaySource) -> Unit,
     onRefresh: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -33,9 +31,8 @@ internal fun OverlayHost(
         UnderlayCard(
             kind = openKind,
             blurRadius = blurRadius,
-            onDismiss = onDismiss,
-            onSourceChange = onSourceChange,
             underlayState = underlayState,
+            onDismiss = onDismiss,
             onRefresh = onRefresh,
         )
     }
@@ -89,7 +86,6 @@ private fun OverlayHostPreview() {
             kind = OverlayKind.SameWindow,
             blurRadius = DEFAULT_BLUR_RADIUS,
             underlayState = rememberUnderlayState(),
-            onSourceChange = { },
             onRefresh = { },
             onDismiss = { },
         )

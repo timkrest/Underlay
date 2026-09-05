@@ -30,8 +30,9 @@ import androidx.compose.ui.unit.Dp
  *   design tools and `RenderEffect.createBlurEffect` give it.
  * @param tint drawn over the blurred content, usually a translucent black or white.
  * @param fallback solid color drawn when no blur is available at all.
- * @param state handle for taking a fresh snapshot of the host window, for content that moves
- *   underneath a long-lived overlay. See [UnderlayState.refresh]. The system blur ignores it.
+ * @param state handle on this underlay: exposes the active [UnderlaySource] as Compose state and
+ *   takes a fresh snapshot of the host window on [UnderlayState.refresh], for content that moves
+ *   underneath a long-lived overlay. The system blur is live and ignores the refresh.
  * @param onSourceChange called whenever the active [UnderlaySource] changes, for diagnostics.
  */
 public fun Modifier.blurredUnderlay(

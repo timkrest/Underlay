@@ -97,6 +97,9 @@ Modifier.blurredUnderlay(
 `UnderlaySource` is `SystemBlur`, `Snapshot`, `Pending` or `Fallback`. The callback fires on every
 change, including the fall-through when the system turns cross-window blur off.
 
+An `UnderlayState`, introduced in the next section, carries the same value as Compose state:
+`underlay.source` is the active `UnderlaySource`, or null while no overlay carries the state.
+
 ## Refreshing the snapshot
 
 `Snapshot` freezes the host window. To capture it again while the overlay is open, hand the modifier
@@ -124,7 +127,7 @@ blurs live and ignores the state.
 
 ```kotlin
 dependencies {
-    implementation("com.timkrest:underlay:0.2.0")
+    implementation("com.timkrest:underlay:0.3.0")
 }
 ```
 

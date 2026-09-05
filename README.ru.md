@@ -95,6 +95,9 @@ Modifier.blurredUnderlay(
 `UnderlaySource` — это `SystemBlur`, `Snapshot`, `Pending` или `Fallback`. Колбэк срабатывает на
 каждое изменение, включая провал вниз, когда система выключает межоконное размытие.
 
+`UnderlayState` из следующего раздела несёт то же значение как Compose-состояние: `underlay.source` —
+текущий `UnderlaySource` или null, пока ни один оверлей это состояние не держит.
+
 ## Обновление снимка
 
 `Snapshot` замораживает host-окно. Чтобы снять его заново, пока оверлей открыт, передайте
@@ -122,7 +125,7 @@ Box(
 
 ```kotlin
 dependencies {
-    implementation("com.timkrest:underlay:0.2.0")
+    implementation("com.timkrest:underlay:0.3.0")
 }
 ```
 

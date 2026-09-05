@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.timkrest.underlay.rememberUnderlayState
 
 class TranslucentOverlayActivity : ComponentActivity() {
 
@@ -27,6 +28,7 @@ class TranslucentOverlayActivity : ComponentActivity() {
                     UnderlayCard(
                         kind = OverlayKind.TranslucentActivity,
                         blurRadius = blurRadius,
+                        underlayState = rememberUnderlayState(),
                         onDismiss = ::finish,
                     )
                 }

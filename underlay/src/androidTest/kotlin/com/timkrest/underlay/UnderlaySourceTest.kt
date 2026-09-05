@@ -3,6 +3,7 @@ package com.timkrest.underlay
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -66,6 +67,20 @@ class UnderlaySourceTest {
     @Test
     fun withSystemBlurAPopupUsesTheWindowFlag() = assertTheWindowFlagWins(popup)
 
+    @Test
+    fun theStateFollowsTheOverlayItIsPassedTo() {
+        val state = UnderlayState()
+        val isOpen = mutableStateOf(true)
+        val reported = showUnderlay({ content -> if (isOpen.value) dialog(content) }, state)
+
+        compose.awaitOrFail({ "no backdrop, reported $reported" }) { state.source?.isBackdrop() == true }
+        assertEquals(reported.last(), state.source)
+
+        compose.runOnIdle { isOpen.value = false }
+
+        compose.awaitOrFail({ "the state kept ${state.source} after the overlay closed" }) { state.source == null }
+    }
+
     private fun assertABackdropFromTheFirstReport(overlay: Overlay) {
         val reported = awaitSource(overlay) { it.isBackdrop() }
 
@@ -116,7 +131,7 @@ class UnderlaySourceTest {
         return reported.toList()
     }
 
-    private fun showUnderlay(overlay: Overlay): CopyOnWriteArrayList<UnderlaySource> {
+    private fun showUnderlay(overlay: Overlay, state: UnderlayState? = null): CopyOnWriteArrayList<UnderlaySource> {
         val reported = CopyOnWriteArrayList<UnderlaySource>()
 
         compose.setContent {
@@ -128,6 +143,7 @@ class UnderlaySourceTest {
                             blurRadius = 16.dp,
                             tint = Color.Black.copy(alpha = 0.3f),
                             fallback = Color.DarkGray,
+                            state = state,
                             onSourceChange = { reported += it },
                         ),
                 )

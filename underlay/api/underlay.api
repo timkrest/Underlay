@@ -16,6 +16,7 @@ public final class com/timkrest/underlay/UnderlaySource : java/lang/Enum {
 public final class com/timkrest/underlay/UnderlayState {
 	public static final field $stable I
 	public fun <init> ()V
+	public final fun getSource ()Lcom/timkrest/underlay/UnderlaySource;
 	public final fun refresh ()V
 }
 

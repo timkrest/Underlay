@@ -4,7 +4,7 @@ package com.timkrest.underlay
  * Where the underlay currently comes from.
  *
  * Reported through the `onSourceChange` callback of
- * [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay].
+ * [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay] and read as [UnderlayState.source].
  */
 public enum class UnderlaySource {
 

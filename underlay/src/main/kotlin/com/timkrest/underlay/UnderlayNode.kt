@@ -68,6 +68,7 @@ internal class UnderlayNode(
         layer = null
         blur = null
         reportedSource = null
+        state?.source = null
         windowManager = null
         activity = null
         configuration = null
@@ -100,7 +101,8 @@ internal class UnderlayNode(
         onSourceChange: ((UnderlaySource) -> Unit)?,
     ) {
         val isRadiusNew = this.blurRadius != blurRadius
-        val isStateNew = this.state !== state
+        val previousState = this.state
+        val isStateNew = previousState !== state
         val isRepaintNeeded = isRadiusNew || this.tint != tint || this.fallback != fallback
 
         this.blurRadius = blurRadius
@@ -111,7 +113,11 @@ internal class UnderlayNode(
         if (!isAttached) return
 
         if (isRadiusNew) backdrop?.reblur(blurRadius, requireDensity())
-        if (isStateNew) observeHostContext()
+        if (isStateNew) {
+            previousState?.source = null
+            state?.source = reportedSource
+            observeHostContext()
+        }
         if (isRepaintNeeded) invalidateDraw()
     }
 
@@ -185,6 +191,7 @@ internal class UnderlayNode(
         if (source == reportedSource) return
 
         reportedSource = source
+        state?.source = source
         onSourceChange?.invoke(source)
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -20,7 +19,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.timkrest.underlay.UnderlaySource
 import com.timkrest.underlay.rememberUnderlayState
 
 private val BACKDROP_GUTTER = 12.dp
@@ -31,7 +29,6 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
     var openKind by rememberSaveable { mutableStateOf<OverlayKind?>(null) }
     var backdropShift by rememberSaveable { mutableIntStateOf(0) }
     val underlayState = rememberUnderlayState()
-    var overlaySource by remember(openKind) { mutableStateOf<UnderlaySource?>(null) }
     val blurRadius = blurRadiusDp.dp
     val tiles = rememberGradientTiles()
     val context = LocalContext.current
@@ -41,7 +38,7 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
             bottomBar = {
                 ControlsPanel(
                     blurRadius = blurRadius,
-                    overlaySource = overlaySource,
+                    overlaySource = underlayState.source,
                     areTilesHardware = tiles?.areHardware,
                     onBlurRadiusChange = { blurRadiusDp = it.value },
                     onOpen = { kind ->
@@ -67,7 +64,6 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
             kind = openKind,
             blurRadius = blurRadius,
             underlayState = underlayState,
-            onSourceChange = { overlaySource = it },
             onRefresh = {
                 backdropShift++
                 underlayState.refresh()
