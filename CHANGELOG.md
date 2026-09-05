@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 recorded in [`underlay/api/underlay.api`](underlay/api/underlay.api) — may change in any minor
 version.
 
+## [0.3.0] - 2026-09-05
+
+### Added
+
+- `UnderlayState.source`: the `UnderlaySource` the overlay carrying the state draws from, as Compose
+  state. Null while no overlay carries it, so a badge outside the overlay clears on dismiss without
+  hosting the value from `onSourceChange` by hand. The callback stays for callers without a state.
+
+### Fixed
+
+- The snapshot could spill up to three host pixels past the composable it backs, where its
+  placement rounds out to whole snapshot pixels. It is now clipped to the composable.
+- On API 31 and above with cross-window blur switched off, opening an overlay captured the host
+  window twice: the initial callback of the blur listener repeated the choice `start()` had already
+  made. The source is now chosen only when the system's answer changes.
+- A detached node kept its `Activity`, `Configuration` and `WindowManager` until it was collected.
+
 ## [0.2.0] - 2026-08-29
 
 ### Added
@@ -54,6 +71,7 @@ version.
   `decorView` draw, `PixelCopy`, and `FLAG_BLUR_BEHIND`. The step each test asserts follows what the
   device offers, not the API level, so a device with cross-window blur switched off is covered too.
 
-[Unreleased]: https://github.com/timkrest/Underlay/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/timkrest/Underlay/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/timkrest/Underlay/releases/tag/v0.3.0
 [0.2.0]: https://github.com/timkrest/Underlay/releases/tag/v0.2.0
 [0.1.0]: https://github.com/timkrest/Underlay/releases/tag/v0.1.0
