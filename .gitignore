@@ -56,3 +56,6 @@ Desktop.ini
 .directory
 *~
 *.swp
+
+# Article drafts, not part of the repo.
+ARTICLE*.md
