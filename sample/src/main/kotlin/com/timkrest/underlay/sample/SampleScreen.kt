@@ -70,6 +70,7 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
                 backdropShift++
                 underlayState.refresh()
             },
+            onBlurRadiusChange = { radius -> blurRadiusDp = radius.value },
             onDismiss = { openKind = null },
         )
     }

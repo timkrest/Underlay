@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,8 +25,6 @@ import kotlin.math.roundToInt
 
 private const val BUTTONS_PER_ROW = 2
 private val OVERLAY_ROWS = OverlayKind.entries.chunked(BUTTONS_PER_ROW)
-private const val BATTERY_SAVER_HINT =
-    "Battery Saver switches cross-window blur off. Turn it on to watch this fall through to Snapshot."
 
 @Composable
 internal fun ControlsPanel(
@@ -52,15 +49,9 @@ internal fun ControlsPanel(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             BlurRadiusRow(blurRadius = blurRadius, overlaySource = overlaySource)
-            Slider(
-                value = blurRadius.value,
-                onValueChange = { onBlurRadiusChange(it.dp) },
-                valueRange = 0f..MAX_BLUR_RADIUS.value,
-            )
+            BlurRadiusSlider(blurRadius = blurRadius, onBlurRadiusChange = onBlurRadiusChange)
             tilesHint(areTilesHardware)?.let { hint -> Hint(text = hint) }
-            if (overlaySource == UnderlaySource.SystemBlur) {
-                Hint(text = BATTERY_SAVER_HINT)
-            }
+            Hint(text = crossWindowBlurHint(isCrossWindowBlurEnabled()))
             OverlayKindButtons(onOpen = onOpen)
         }
     }
@@ -112,6 +103,12 @@ private fun tilesHint(areTilesHardware: Boolean?): String? = when (areTilesHardw
     null -> null
     true -> "Tiles: hardware bitmaps"
     false -> "Tiles: software bitmaps"
+}
+
+private fun crossWindowBlurHint(isEnabled: Boolean?): String = when (isEnabled) {
+    null -> "Cross-window blur: needs API 31, this device is older. SystemBlur is out of the ladder."
+    true -> "Cross-window blur: on. Turn Battery Saver on to watch an open overlay fall through to Snapshot."
+    false -> "Cross-window blur: off on this device, so SystemBlur is out of the ladder."
 }
 
 @Preview

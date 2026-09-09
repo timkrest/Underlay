@@ -36,8 +36,9 @@ internal fun UnderlayCard(
     blurRadius: Dp,
     underlayState: UnderlayState,
     onDismiss: () -> Unit,
+    onRefresh: () -> Unit,
+    onBlurRadiusChange: (Dp) -> Unit,
     modifier: Modifier = Modifier,
-    onRefresh: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -69,18 +70,16 @@ internal fun UnderlayCard(
             color = Color.White.copy(alpha = 0.76f),
             style = MaterialTheme.typography.bodySmall,
         )
+        BlurRadiusSlider(blurRadius = blurRadius, onBlurRadiusChange = onBlurRadiusChange)
         Row(
             modifier = Modifier.align(Alignment.End),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            if (onRefresh != null) {
-                val hasHostWindow = kind != OverlayKind.SameWindow
-                TextButton(onClick = onRefresh, enabled = hasHostWindow) {
-                    Text(
-                        text = "Shuffle backdrop",
-                        color = Color.White.copy(alpha = if (hasHostWindow) 1f else DISABLED_ALPHA),
-                    )
-                }
+            TextButton(onClick = onRefresh, enabled = kind.hasHostWindow) {
+                Text(
+                    text = "Shuffle backdrop",
+                    color = Color.White.copy(alpha = if (kind.hasHostWindow) 1f else DISABLED_ALPHA),
+                )
             }
             TextButton(onClick = onDismiss) {
                 Text(text = "Close", color = Color.White)
@@ -99,6 +98,7 @@ private fun UnderlayCardPreview() {
             underlayState = rememberUnderlayState(),
             onDismiss = { },
             onRefresh = { },
+            onBlurRadiusChange = { },
         )
     }
 }

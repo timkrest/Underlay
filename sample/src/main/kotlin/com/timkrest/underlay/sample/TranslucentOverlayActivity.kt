@@ -9,6 +9,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
@@ -19,9 +23,11 @@ class TranslucentOverlayActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val blurRadius = intent.getFloatExtra(EXTRA_BLUR_RADIUS, DEFAULT_BLUR_RADIUS.value).dp
+        val initialBlurRadius = intent.getFloatExtra(EXTRA_BLUR_RADIUS, DEFAULT_BLUR_RADIUS.value).dp
 
         setContent {
+            var blurRadius by remember { mutableStateOf(initialBlurRadius) }
+
             SampleTheme {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -32,6 +38,8 @@ class TranslucentOverlayActivity : ComponentActivity() {
                         blurRadius = blurRadius,
                         underlayState = rememberUnderlayState(),
                         onDismiss = ::finish,
+                        onRefresh = {},
+                        onBlurRadiusChange = { radius -> blurRadius = radius },
                     )
                 }
             }

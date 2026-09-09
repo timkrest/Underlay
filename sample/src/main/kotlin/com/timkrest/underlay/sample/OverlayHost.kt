@@ -7,7 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,6 +27,7 @@ internal fun OverlayHost(
     blurRadius: Dp,
     underlayState: UnderlayState,
     onRefresh: () -> Unit,
+    onBlurRadiusChange: (Dp) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val card: @Composable (OverlayKind) -> Unit = { openKind ->
@@ -36,6 +37,7 @@ internal fun OverlayHost(
             underlayState = underlayState,
             onDismiss = onDismiss,
             onRefresh = onRefresh,
+            onBlurRadiusChange = onBlurRadiusChange,
         )
     }
 
@@ -74,10 +76,7 @@ internal fun OverlayHost(
 private fun RemoveDialogDim() {
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window
 
-    DisposableEffect(window) {
-        window?.setDimAmount(0f)
-        onDispose { }
-    }
+    SideEffect { window?.setDimAmount(0f) }
 }
 
 @Preview(heightDp = 480)
@@ -89,6 +88,7 @@ private fun OverlayHostPreview() {
             blurRadius = DEFAULT_BLUR_RADIUS,
             underlayState = rememberUnderlayState(),
             onRefresh = { },
+            onBlurRadiusChange = { },
             onDismiss = { },
         )
     }

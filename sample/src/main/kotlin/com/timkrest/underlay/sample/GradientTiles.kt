@@ -38,7 +38,6 @@ private val GRADIENTS = listOf(
 @Immutable
 internal class GradientTiles(val images: List<ImageBitmap>, val areHardware: Boolean)
 
-/** Null until the tiles are ready: drawing eight of them is too much to do while a frame waits. */
 @Composable
 internal fun rememberGradientTiles(): GradientTiles? {
     val tiles by produceState<GradientTiles?>(null) {
