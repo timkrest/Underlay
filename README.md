@@ -182,7 +182,13 @@ dialogs into the same view hierarchy, so there is no window boundary and `UIVisu
 already covers blur. Desktop has the boundary but nothing in common with `FLAG_BLUR_BEHIND` or
 `PixelCopy` — a second implementation, not shared code. Only the box blur is portable.
 
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers building, the instrumentation tests and what a pull
+request needs. The most useful report is which step the ladder reached on your device. Contributions
+are covered by the [CLA](CLA.md), signed by a comment on your first pull request.
+
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE). Pull requests are covered by the [CLA](CLA.md), signed once by
-commenting on your first one. Vulnerabilities go through [SECURITY.md](SECURITY.md), not an issue.
+Apache 2.0 — see [LICENSE](LICENSE). Vulnerabilities go through [SECURITY.md](SECURITY.md), not an
+issue.

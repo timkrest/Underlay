@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 recorded in [`underlay/api/underlay.api`](underlay/api/underlay.api) — may change in any minor
 version.
 
+## [Unreleased]
+
+### Fixed
+
+- `SystemBlur` was reported from the intent to set the window flag, not from the window taking it.
+  A `Popup` whose root view had already left the window manager refused the update, and the overlay
+  reported a system blur while the host stayed sharp behind it. A refusal now falls through to a
+  snapshot, the same way a device with cross-window blur switched off does.
+- On a host window whose width or height is not a multiple of four, `PixelCopy` captured the whole
+  window into a bitmap that could not hold it at a flat quarter scale, while `decorView.draw()`
+  scaled by exactly a quarter. Placement assumes the quarter, so on the `PixelCopy` path the
+  backdrop was shifted, and the last one to three columns or rows of the window had none at all.
+  Both paths now cover the largest exact quarter that fits.
+
+### Changed
+
+- `:sample` carries the radius slider inside the overlay card as well as in the panel: a `Dialog`
+  and a `Popup` swallow the touches outside them, which left re-blurring an open overlay
+  unreachable. It also reports whether the device has cross-window blur at all, rather than only
+  pointing at Battery Saver once an overlay had already reached `SystemBlur`.
+
 ## [0.3.0] - 2026-09-05
 
 ### Added
