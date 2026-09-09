@@ -37,6 +37,9 @@ jobs:
       - name: Style
         run: ./gradlew ktlintCheck
 
+      - name: Licence headers
+        run: .github/scripts/check-license-headers.sh
+
       - name: Public API
         run: ./gradlew apiCheck
 

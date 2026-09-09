@@ -1,3 +1,5 @@
+// Copyright 2026 Timofey Krestyanov
+// SPDX-License-Identifier: Apache-2.0
 package com.timkrest.underlay.sample
 
 internal enum class OverlayKind(val label: String, val explanation: String) {

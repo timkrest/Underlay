@@ -1,3 +1,5 @@
+// Copyright 2026 Timofey Krestyanov
+// SPDX-License-Identifier: Apache-2.0
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
