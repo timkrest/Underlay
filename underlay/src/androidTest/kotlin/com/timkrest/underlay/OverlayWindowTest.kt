@@ -75,13 +75,13 @@ class OverlayWindowTest {
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun assertBlurBehindTravels(overlay: OverlayWindow, attributes: () -> WindowManager.LayoutParams) {
-        compose.runOnUiThread { overlay.applyBlurBehind(RADIUS_PX) }
+        assertTrue(compose.runOnUiThread { overlay.takesBlurBehind(RADIUS_PX) }, "the window refused the flag")
         compose.waitForIdle()
 
         assertTrue(attributes().hasBlurBehind(), "the flag never reached the window")
         assertEquals(RADIUS_PX, attributes().blurBehindRadius)
 
-        compose.runOnUiThread { overlay.clearBlurBehind() }
+        assertTrue(compose.runOnUiThread { overlay.dropsBlurBehind() }, "the window refused to drop the flag")
         compose.waitForIdle()
 
         assertFalse(attributes().hasBlurBehind(), "the flag stayed on the window")

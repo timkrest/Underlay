@@ -6,9 +6,9 @@ import android.graphics.Bitmap
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.GraphicsContext
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -17,53 +17,50 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Blurs a window capture. [sigma] is a Gaussian standard deviation in snapshot pixels. */
 internal interface SnapshotBlur {
 
     suspend fun blur(capture: Bitmap, sigma: Float): ImageBitmap
+
+    fun release()
 }
 
-internal fun snapshotBlur(layer: GraphicsLayer): SnapshotBlur =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) BlurEffectOnGpu(layer) else BoxBlurOnCpu()
+private val RAW_PIXELS = Density(1f)
 
-/**
- * Keeps the last result: a slider drag walks through sigmas that share one box radius, and each
- * blur is six passes over every pixel.
- */
+internal fun snapshotBlur(graphicsContext: GraphicsContext): SnapshotBlur =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) BlurEffectOnGpu(graphicsContext) else BoxBlurOnCpu()
+
 internal class BoxBlurOnCpu : SnapshotBlur {
 
-    private var blurred: ImageBitmap? = null
-    private var blurredFrom: Bitmap? = null
-    private var blurredRadius = NO_RADIUS
+    private var kept: Blurred? = null
 
     override suspend fun blur(capture: Bitmap, sigma: Float): ImageBitmap {
         val radius = boxBlurRadiusForSigma(sigma)
-        blurred?.let { if (radius == blurredRadius && capture === blurredFrom) return it }
+        kept?.let { if (it.capture === capture && it.radius == radius) return it.image }
 
-        val result = withContext(Dispatchers.Default) { capture.boxBlurred(radius).asImageBitmap() }
-        blurred = result
-        blurredFrom = capture
-        blurredRadius = radius
+        val image = withContext(Dispatchers.Default) { capture.boxBlurred(radius).asImageBitmap() }
+        kept = Blurred(capture, radius, image)
 
-        return result
+        return image
     }
 
-    private companion object {
-        const val NO_RADIUS = -1
+    override fun release() {
+        kept = null
     }
+
+    private class Blurred(val capture: Bitmap, val radius: Int, val image: ImageBitmap)
 }
 
 @RequiresApi(Build.VERSION_CODES.S)
-private class BlurEffectOnGpu(private val layer: GraphicsLayer) : SnapshotBlur {
+private class BlurEffectOnGpu(private val graphicsContext: GraphicsContext) : SnapshotBlur {
 
+    private val layer = graphicsContext.createGraphicsLayer()
     private val onCpu = BoxBlurOnCpu()
 
     override suspend fun blur(capture: Bitmap, sigma: Float): ImageBitmap {
         val image = capture.asImageBitmap()
 
         return try {
-            // drawImage works in pixels, so the density and direction record asks for do not matter.
-            layer.record(Density(1f), LayoutDirection.Ltr, IntSize(capture.width, capture.height)) { drawImage(image) }
+            layer.record(RAW_PIXELS, LayoutDirection.Ltr, IntSize(capture.width, capture.height)) { drawImage(image) }
             layer.renderEffect = BlurEffect(sigma, sigma)
             layer.toImageBitmap()
         } catch (cancelled: CancellationException) {
@@ -71,6 +68,11 @@ private class BlurEffectOnGpu(private val layer: GraphicsLayer) : SnapshotBlur {
         } catch (noRenderingContext: RuntimeException) {
             onCpu.blur(capture, sigma)
         }
+    }
+
+    override fun release() {
+        graphicsContext.releaseGraphicsLayer(layer)
+        onCpu.release()
     }
 }
 

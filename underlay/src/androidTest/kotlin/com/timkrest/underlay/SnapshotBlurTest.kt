@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsContext
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.layer.GraphicsLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -27,7 +27,6 @@ import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-/** Runs on a device: the blur goes through `RenderEffect` from API 31 and box passes below it. */
 @RunWith(AndroidJUnit4::class)
 class SnapshotBlurTest {
 
@@ -76,9 +75,9 @@ class SnapshotBlurTest {
     }
 
     private fun blurredHalves(): ImageBitmap {
-        lateinit var layer: GraphicsLayer
+        lateinit var graphicsContext: GraphicsContext
         compose.setContent {
-            layer = rememberGraphicsLayer()
+            graphicsContext = LocalGraphicsContext.current
             Row(Modifier.fillMaxSize()) {
                 Box(Modifier.fillMaxHeight().weight(1f).background(Color.Red))
                 Box(Modifier.fillMaxHeight().weight(1f).background(Color.Blue))
@@ -90,7 +89,12 @@ class SnapshotBlurTest {
             val window = compose.activity.window
             val capture = assertNotNull(window.createCaptureBitmap(), "the host window is not drawable")
             assertTrue(window.captureInto(capture), "the host window could not be captured")
-            snapshotBlur(layer).blur(capture, SIGMA)
+            val blur = snapshotBlur(graphicsContext)
+            try {
+                blur.blur(capture, SIGMA)
+            } finally {
+                blur.release()
+            }
         }
     }
 

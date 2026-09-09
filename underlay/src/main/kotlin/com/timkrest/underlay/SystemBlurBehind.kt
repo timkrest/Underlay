@@ -7,12 +7,9 @@ import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import java.util.function.Consumer
 
-/** `FLAG_BLUR_BEHIND` on the overlay window. Battery saver turns it off while the overlay is open. */
 internal interface SystemBlurBehind {
 
-    val isEnabled: Boolean
-
-    fun request(radiusPx: Int)
+    fun request(radiusPx: Int): Boolean
 
     fun withdraw()
 
@@ -44,19 +41,19 @@ private class CrossWindowBlur(
         windowManager.addCrossWindowBlurEnabledListener(listener)
     }
 
-    override val isEnabled: Boolean get() = windowManager.isCrossWindowBlurEnabled
+    override fun request(radiusPx: Int): Boolean {
+        if (!windowManager.isCrossWindowBlurEnabled) return false
+        if (appliedRadiusPx == radiusPx) return true
+        if (!overlay.takesBlurBehind(radiusPx)) return false
 
-    override fun request(radiusPx: Int) {
-        if (appliedRadiusPx == radiusPx) return
-
-        overlay.applyBlurBehind(radiusPx)
         appliedRadiusPx = radiusPx
+        return true
     }
 
     override fun withdraw() {
         if (appliedRadiusPx == null) return
 
-        overlay.clearBlurBehind()
+        overlay.dropsBlurBehind()
         appliedRadiusPx = null
     }
 
