@@ -82,7 +82,6 @@ class BoxBlurTest {
 
     @Test
     fun `fully transparent pixels do not bleed their color`() {
-        // Alpha 0 with a color left in the channels is what an erased-then-drawn capture holds.
         val pixels = IntArray(8 * 8) { 0x00FF0000 }
 
         blurPixels(pixels, width = 8, height = 8, radius = 2)

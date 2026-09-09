@@ -12,7 +12,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlin.math.roundToInt
 
-/** Reads a snapshot pixel through a software copy: the GPU blur hands back a hardware bitmap. */
 internal fun ImageBitmap.pixelAt(x: Int, y: Int): Color {
     val readable = asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, false)
         ?: error("a ${width}x$height snapshot could not be copied for reading")

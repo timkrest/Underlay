@@ -31,11 +31,15 @@ public class UnderlayState {
     public var source: UnderlaySource? by mutableStateOf(null)
         internal set
 
-    /** Captures the host window again. The snapshot on screen stays until the new one is ready. */
+    /**
+     * Captures the host window again, from the main thread. The snapshot on screen stays until the
+     * new one is ready.
+     */
     public fun refresh() {
         refreshes++
     }
 }
 
+/** Remembers an [UnderlayState] for as long as the calling composable stays in composition. */
 @Composable
 public fun rememberUnderlayState(): UnderlayState = remember { UnderlayState() }

@@ -176,7 +176,6 @@ class SnapshotRefreshTest {
         blue = TINT.blue * TINT.alpha + blue * (1f - TINT.alpha),
     )
 
-    /** A round trip through the GPU is not always bit exact. */
     private fun Color.matches(other: Color): Boolean =
         abs(red - other.red) <= CHANNEL_TOLERANCE &&
             abs(green - other.green) <= CHANNEL_TOLERANCE &&

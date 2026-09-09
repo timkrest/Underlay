@@ -22,7 +22,6 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
-/** Which source wins is decided by the device, not the API level - hence the assumptions. */
 @RunWith(AndroidJUnit4::class)
 class UnderlaySourceTest {
 

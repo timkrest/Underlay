@@ -14,7 +14,6 @@ private const val GREEN_SHIFT = 8
 private const val CHANNEL_MASK = 0xFF
 private const val OPAQUE = 0xFF
 
-/** The box radius whose [BLUR_PASSES] passes land closest to a Gaussian of [sigma]. */
 internal fun boxBlurRadiusForSigma(sigma: Float): Int {
     if (sigma <= 0f) return 0
 
@@ -30,12 +29,7 @@ private fun sigmaOfRadius(radius: Int): Float {
     return sqrt((window * window - 1f) * BLUR_PASSES / BOX_VARIANCE_DIVISOR)
 }
 
-/**
- * [BLUR_PASSES] box passes over ARGB_8888 [pixels], in place. Channels are averaged premultiplied,
- * so a transparent neighbour does not bleed its color into the result.
- */
 internal fun blurPixels(pixels: IntArray, width: Int, height: Int, radius: Int) {
-    require(width >= 0 && height >= 0) { "negative size ${width}x$height" }
     require(pixels.size == width * height) { "pixels.size=${pixels.size} does not match ${width}x$height" }
 
     val maxRadius = (minOf(width, height) / 2).coerceAtLeast(0)
@@ -139,7 +133,6 @@ private class ChannelSums {
         blue -= pixel and CHANNEL_MASK
     }
 
-    /** Truncating instead would lose half a level on every pass and visibly darken the result. */
     fun average(window: Int): Int {
         val rounding = window / 2
         return ((alpha + rounding) / window shl ALPHA_SHIFT) or
