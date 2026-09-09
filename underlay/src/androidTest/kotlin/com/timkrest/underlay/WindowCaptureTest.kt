@@ -22,7 +22,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import android.graphics.Color as PixelColor
 
-/** Runs on a device: neither `PixelCopy` nor `decorView.draw()` is reachable from a JVM test. */
 @RunWith(AndroidJUnit4::class)
 class WindowCaptureTest {
 
@@ -42,14 +41,24 @@ class WindowCaptureTest {
     }
 
     @Test
-    fun aCaptureIsDownscaledByTheDeclaredFactor() {
+    fun aCaptureIsTheLargestExactDownscaleThatFitsTheWindow() {
         showFullScreen(Color.Blue)
         val decorView = compose.activity.window.decorView
 
         val captured = captureHostWindow()
 
-        assertEquals(decorView.width / WINDOW_CAPTURE_DOWN_SCALE, captured.width)
-        assertEquals(decorView.height / WINDOW_CAPTURE_DOWN_SCALE, captured.height)
+        assertExactDownscale(hostPixels = decorView.width, snapshotPixels = captured.width, side = "width")
+        assertExactDownscale(hostPixels = decorView.height, snapshotPixels = captured.height, side = "height")
+    }
+
+    private fun assertExactDownscale(hostPixels: Int, snapshotPixels: Int, side: String) {
+        val covered = snapshotPixels * WINDOW_CAPTURE_DOWN_SCALE
+
+        assertTrue(covered <= hostPixels, "$side: the snapshot claims $covered of $hostPixels host pixels")
+        assertTrue(
+            hostPixels - covered < WINDOW_CAPTURE_DOWN_SCALE,
+            "$side: another snapshot pixel would have fit, ${hostPixels - covered} host pixels are uncovered",
+        )
     }
 
     private fun showFullScreen(color: Color) {
@@ -59,7 +68,6 @@ class WindowCaptureTest {
         compose.waitForIdle()
     }
 
-    /** Driven from the test thread so the main looper can deliver the `PixelCopy` result. */
     private fun captureHostWindow(): Bitmap = runBlocking(Dispatchers.Main) {
         val window = compose.activity.window
         val destination = assertNotNull(window.createCaptureBitmap(), "the host window is not drawable")
@@ -74,7 +82,6 @@ class WindowCaptureTest {
     }
 
     private companion object {
-        /** A round trip through the GPU is not always bit exact. */
         const val CHANNEL_TOLERANCE = 8
     }
 }

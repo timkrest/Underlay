@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.roundToInt
 
+internal class SnapshotPlacement(val source: IntRect, val destination: IntRect)
+
 internal fun originInHost(view: View, host: Window, positionInRoot: Offset): IntOffset {
     val viewLocation = IntArray(2)
     val hostLocation = IntArray(2)
@@ -45,45 +47,37 @@ internal fun DrawScope.drawSnapshot(snapshot: ImageBitmap, originInHost: IntOffs
     }
 }
 
-internal class SnapshotPlacement(val source: IntRect, val destination: IntRect)
-
-/**
- * Which part of the snapshot goes under a composable of [size] sitting at [originInHost], and where.
- *
- * Both rectangles cover the same host pixels, so the snapshot is never stretched: a composable
- * reaching past the host window gets a backdrop only under the part that overlaps it. Null when
- * there is no overlap.
- */
 internal fun snapshotPlacement(originInHost: IntOffset, size: IntSize, snapshot: IntSize): SnapshotPlacement? {
-    val left = originInHost.x.coerceAtLeast(0)
-    val top = originInHost.y.coerceAtLeast(0)
-    val right = (originInHost.x + size.width).coerceAtMost(snapshot.width * WINDOW_CAPTURE_DOWN_SCALE)
-    val bottom = (originInHost.y + size.height).coerceAtMost(snapshot.height * WINDOW_CAPTURE_DOWN_SCALE)
-    if (right <= left || bottom <= top) return null
+    val overlap = hostPixelsUnder(originInHost, size, snapshot) ?: return null
+    val source = overlap.inSnapshotPixels()
 
-    val source = IntRect(
-        left = snapshotPixelsFloor(left),
-        top = snapshotPixelsFloor(top),
-        right = snapshotPixelsCeil(right),
-        bottom = snapshotPixelsCeil(bottom),
-    )
-
-    return SnapshotPlacement(
-        source = source,
-        destination = IntRect(
-            offset = IntOffset(
-                x = source.left * WINDOW_CAPTURE_DOWN_SCALE - originInHost.x,
-                y = source.top * WINDOW_CAPTURE_DOWN_SCALE - originInHost.y,
-            ),
-            size = IntSize(
-                width = source.width * WINDOW_CAPTURE_DOWN_SCALE,
-                height = source.height * WINDOW_CAPTURE_DOWN_SCALE,
-            ),
-        ),
-    )
+    return SnapshotPlacement(source = source, destination = source.inHostPixels().translate(-originInHost))
 }
 
-private fun snapshotPixelsFloor(hostPixels: Int): Int = hostPixels / WINDOW_CAPTURE_DOWN_SCALE
+private fun hostPixelsUnder(originInHost: IntOffset, size: IntSize, snapshot: IntSize): IntRect? {
+    val overlap = IntRect(
+        left = originInHost.x.coerceAtLeast(0),
+        top = originInHost.y.coerceAtLeast(0),
+        right = (originInHost.x + size.width).coerceAtMost(snapshot.width * WINDOW_CAPTURE_DOWN_SCALE),
+        bottom = (originInHost.y + size.height).coerceAtMost(snapshot.height * WINDOW_CAPTURE_DOWN_SCALE),
+    )
+
+    return overlap.takeIf { it.width > 0 && it.height > 0 }
+}
+
+private fun IntRect.inSnapshotPixels(): IntRect = IntRect(
+    left = snapshotPixelsFloor(left),
+    top = snapshotPixelsFloor(top),
+    right = snapshotPixelsCeil(right),
+    bottom = snapshotPixelsCeil(bottom),
+)
+
+private fun IntRect.inHostPixels(): IntRect = IntRect(
+    offset = IntOffset(left * WINDOW_CAPTURE_DOWN_SCALE, top * WINDOW_CAPTURE_DOWN_SCALE),
+    size = IntSize(width * WINDOW_CAPTURE_DOWN_SCALE, height * WINDOW_CAPTURE_DOWN_SCALE),
+)
+
+internal fun snapshotPixelsFloor(hostPixels: Int): Int = hostPixels / WINDOW_CAPTURE_DOWN_SCALE
 
 private fun snapshotPixelsCeil(hostPixels: Int): Int =
     (hostPixels + WINDOW_CAPTURE_DOWN_SCALE - 1) / WINDOW_CAPTURE_DOWN_SCALE

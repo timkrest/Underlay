@@ -5,6 +5,7 @@ package com.timkrest.underlay
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -23,32 +24,22 @@ internal const val WINDOW_CAPTURE_DOWN_SCALE = 4
 
 private const val CAPTURE_ATTEMPTS = 3
 
-/**
- * The window as it was last drawn, or null if no attempt succeeded. The buffer is recycled only
- * after every attempt has returned, and not in a `finally`: a cancelled [captureInto] leaves a
- * `PixelCopy` still writing into it, and recycling under that request crashes the framework.
- */
 internal suspend fun Window.captureOnFrameBoundary(): Bitmap? {
-    var buffer: Bitmap? = null
-
     repeat(CAPTURE_ATTEMPTS) {
-        withFrameNanos { }
-        awaitFrameDrawn()
-        val destination = buffer ?: createCaptureBitmap() ?: return@repeat
-        buffer = destination
-        if (captureInto(destination)) return destination
+        awaitDrawnFrame()
+        val destination = createCaptureBitmap()
+        if (destination != null && captureInto(destination)) return destination
     }
 
-    buffer?.recycle()
     return null
 }
 
-/**
- * Waits for the vsync after this one. Compose's clock ticks before a frame is drawn and a capture
- * reads what the window last put on screen, so without this it would return the frame before the
- * change that asked for it. A vsync also arrives when Compose has no more frames to draw.
- */
-private suspend fun awaitFrameDrawn(): Unit = suspendCancellableCoroutine { continuation ->
+private suspend fun awaitDrawnFrame() {
+    withFrameNanos { }
+    awaitVsync()
+}
+
+private suspend fun awaitVsync(): Unit = suspendCancellableCoroutine { continuation ->
     val choreographer = Choreographer.getInstance()
     val callback = Choreographer.FrameCallback { continuation.resume(Unit) }
 
@@ -61,8 +52,8 @@ internal fun Window.createCaptureBitmap(): Bitmap? {
     if (!view.isDrawable()) return null
 
     return createBitmap(
-        width = (view.width / WINDOW_CAPTURE_DOWN_SCALE).coerceAtLeast(1),
-        height = (view.height / WINDOW_CAPTURE_DOWN_SCALE).coerceAtLeast(1),
+        width = snapshotPixelsFloor(view.width).coerceAtLeast(1),
+        height = snapshotPixelsFloor(view.height).coerceAtLeast(1),
     )
 }
 
@@ -88,11 +79,19 @@ private suspend fun Window.requestPixelCopy(destination: Bitmap): Boolean =
     suspendCancellableCoroutine { continuation ->
         PixelCopy.request(
             this,
+            hostPixelsCaptured(destination),
             destination,
             { result -> continuation.resume(result == PixelCopy.SUCCESS) },
             Handler(Looper.getMainLooper()),
         )
     }
+
+private fun hostPixelsCaptured(destination: Bitmap) = Rect(
+    0,
+    0,
+    destination.width * WINDOW_CAPTURE_DOWN_SCALE,
+    destination.height * WINDOW_CAPTURE_DOWN_SCALE,
+)
 
 private fun View.drawScaledInto(destination: Bitmap): Boolean = try {
     destination.eraseColor(Color.TRANSPARENT)

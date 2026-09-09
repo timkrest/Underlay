@@ -79,6 +79,21 @@ class SnapshotPlacementTest {
     }
 
     @Test
+    fun `a host width that is not a multiple of the capture factor stays inside the snapshot`() {
+        val hostWidth = 4 * 270 + 2
+        val snapshot = IntSize(width = snapshotPixelsFloor(hostWidth), height = snapshotPixelsFloor(800))
+
+        val placement = placementIn(snapshot = snapshot, origin = IntOffset.Zero, size = IntSize(hostWidth, 800))
+
+        assertEquals(snapshot.width, placement.source.right, "the placement must reach the snapshot's last column")
+        assertEquals(
+            placement.source.width * WINDOW_CAPTURE_DOWN_SCALE,
+            placement.destination.width,
+            "the snapshot must not be stretched to cover the host pixels it never captured",
+        )
+    }
+
+    @Test
     fun `a composable entirely off the snapshot draws nothing`() {
         val placement = snapshotPlacement(
             originInHost = IntOffset(x = 10_000, y = 10_000),
@@ -90,12 +105,11 @@ class SnapshotPlacementTest {
     }
 
     private fun placementIn(hostWidth: Int, hostHeight: Int, origin: IntOffset, size: IntSize): SnapshotPlacement =
+        placementIn(snapshotOf(hostWidth, hostHeight), origin, size)
+
+    private fun placementIn(snapshot: IntSize, origin: IntOffset, size: IntSize): SnapshotPlacement =
         assertNotNull(
-            snapshotPlacement(
-                originInHost = origin,
-                size = size,
-                snapshot = snapshotOf(hostWidth, hostHeight),
-            ),
+            snapshotPlacement(originInHost = origin, size = size, snapshot = snapshot),
             "the composable overlaps the host window",
         )
 
