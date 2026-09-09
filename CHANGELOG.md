@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 recorded in [`underlay/api/underlay.api`](underlay/api/underlay.api) — may change in any minor
 version.
 
-## [Unreleased]
+## [0.3.1] - 2026-09-10
 
 ### Fixed
 
@@ -92,7 +92,8 @@ version.
   `decorView` draw, `PixelCopy`, and `FLAG_BLUR_BEHIND`. The step each test asserts follows what the
   device offers, not the API level, so a device with cross-window blur switched off is covered too.
 
-[Unreleased]: https://github.com/timkrest/Underlay/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/timkrest/Underlay/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/timkrest/Underlay/releases/tag/v0.3.1
 [0.3.0]: https://github.com/timkrest/Underlay/releases/tag/v0.3.0
 [0.2.0]: https://github.com/timkrest/Underlay/releases/tag/v0.2.0
 [0.1.0]: https://github.com/timkrest/Underlay/releases/tag/v0.1.0

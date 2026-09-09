@@ -125,7 +125,7 @@ Box(
 
 ```kotlin
 dependencies {
-    implementation("com.timkrest:underlay:0.3.0")
+    implementation("com.timkrest:underlay:0.3.1")
 }
 ```
 
