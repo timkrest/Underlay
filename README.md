@@ -168,8 +168,8 @@ checked on every build.
 
 `:sample` opens one overlay per window kind — `Dialog`, `Popup`, translucent activity, plain
 in-window overlay — over a grid of hardware bitmaps, reports the active source and lets you drag the
-radius. Under `SystemBlur` it points at Battery Saver, which triggers the fall-through to `Snapshot`
-on a real device.
+radius. It also reports whether the device has cross-window blur at all, and points at Battery Saver,
+which triggers the fall-through to `Snapshot` on a device that does.
 
 ```bash
 ./gradlew :sample:installDebug
@@ -184,4 +184,5 @@ already covers blur. Desktop has the boundary but nothing in common with `FLAG_B
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Apache 2.0 — see [LICENSE](LICENSE). Pull requests are covered by the [CLA](CLA.md), signed once by
+commenting on your first one. Vulnerabilities go through [SECURITY.md](SECURITY.md), not an issue.
