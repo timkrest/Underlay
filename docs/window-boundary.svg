@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b7cf6"/></marker><marker id="s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d96c4f"/></marker></defs>
+<rect width="1200" height="640" fill="#111318"/>
+<rect x="80" y="150" width="520" height="420" rx="14" fill="#1c2230" stroke="#2c313b" stroke-width="1.5"/>
+<text x="100" y="136" fill="#e8eaee" font-size="15" font-weight="600" text-anchor="start">Activity window</text>
+<text x="100" y="178" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start">its own ViewRootImpl, surface and render node tree</text>
+<rect x="104" y="202" width="146" height="72" rx="8" fill="#4c6ef5" opacity="0.85"/>
+<rect x="264" y="202" width="146" height="72" rx="8" fill="#12b886" opacity="0.85"/>
+<rect x="424" y="202" width="146" height="72" rx="8" fill="#f59f00" opacity="0.85"/>
+<rect x="104" y="290" width="146" height="72" rx="8" fill="#12b886" opacity="0.85"/>
+<rect x="264" y="290" width="146" height="72" rx="8" fill="#f59f00" opacity="0.85"/>
+<rect x="424" y="290" width="146" height="72" rx="8" fill="#e64980" opacity="0.85"/>
+<rect x="104" y="378" width="146" height="72" rx="8" fill="#f59f00" opacity="0.85"/>
+<rect x="264" y="378" width="146" height="72" rx="8" fill="#e64980" opacity="0.85"/>
+<rect x="424" y="378" width="146" height="72" rx="8" fill="#4c6ef5" opacity="0.85"/>
+<rect x="104" y="466" width="146" height="72" rx="8" fill="#e64980" opacity="0.85"/>
+<rect x="264" y="466" width="146" height="72" rx="8" fill="#4c6ef5" opacity="0.85"/>
+<rect x="424" y="466" width="146" height="72" rx="8" fill="#12b886" opacity="0.85"/>
+<rect x="338" y="280" width="400" height="260" rx="14" fill="#000" opacity="0.35"/>
+<rect x="330" y="270" width="400" height="260" rx="14" fill="#232a3a" stroke="#8b7cf6" stroke-width="2"/>
+<text x="350" y="300" fill="#8b7cf6" font-size="15" font-weight="600" text-anchor="start">Dialog window</text>
+<text x="350" y="320" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start">a second android.view.Window: its own ViewRootImpl, surface</text>
+<text x="350" y="336" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start">and render node tree</text>
+<rect x="350" y="354" width="360" height="90" rx="10" fill="#2c3448" stroke="#2c313b"/>
+<text x="370" y="384" fill="#e8eaee" font-size="14" font-weight="500" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">Modifier.blur()  ·  haze  ·  Cloudy</text>
+<text x="370" y="408" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start">all of them blur inside this window</text>
+<line x1="390" y1="444" x2="390" y2="500" stroke="#d96c4f" stroke-width="2.5" marker-end="url(#s)"/>
+<line x1="332" y1="508" x2="728" y2="508" stroke="#d96c4f" stroke-width="3"/>
+<text x="414" y="494" fill="#d96c4f" font-size="12" font-weight="400" text-anchor="start">stops at the window edge; the activity layer is out of reach</text>
+<text x="790" y="170" fill="#e8eaee" font-size="15" font-weight="600" text-anchor="start">Around the boundary, from outside the composition</text>
+<line x1="790" y1="182" x2="1140" y2="182" stroke="#2c313b"/>
+<text x="790" y="218" fill="#8b7cf6" font-size="22" font-weight="700" text-anchor="start">1</text>
+<text x="818" y="218" fill="#e8eaee" font-size="15" font-weight="600" text-anchor="start">Ask the system</text>
+<text x="818" y="240" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">FLAG_BLUR_BEHIND + blurBehindRadius on the</text>
+<text x="818" y="256" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start">overlay's LayoutParams. API 31+, and only while</text>
+<text x="818" y="272" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">isCrossWindowBlurEnabled is true.</text>
+<path d="M800,290 C 710,310 730,200 604,190" fill="none" stroke="#8b7cf6" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#a)"/>
+<text x="790" y="350" fill="#8b7cf6" font-size="22" font-weight="700" text-anchor="start">2</text>
+<text x="818" y="350" fill="#e8eaee" font-size="15" font-weight="600" text-anchor="start">Capture the other window yourself</text>
+<text x="818" y="372" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">PixelCopy.request(activity.window, bitmap)</text>
+<text x="818" y="388" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start">API 26+; decorView.draw() below that.</text>
+<text x="818" y="404" fill="#99a1af" font-size="12" font-weight="400" text-anchor="start">Downscale ×4, blur it, draw it under the dialog.</text>
+<path d="M800,420 C 710,440 730,240 604,230" fill="none" stroke="#8b7cf6" stroke-width="2" marker-end="url(#a)"/>
+<text x="790" y="470" fill="#99a1af" font-size="13" font-weight="400" text-anchor="start">Neither one is a modifier. Both are what</text>
+<text x="790" y="488" fill="#99a1af" font-size="13" font-weight="400" text-anchor="start">Underlay picks between, per device, at runtime.</text>
+<text x="80" y="70" fill="#e8eaee" font-size="27" font-weight="600" text-anchor="start">Why a modifier can't blur what's behind a dialog</text>
+<text x="80" y="100" fill="#99a1af" font-size="15" font-weight="400" text-anchor="start">A Compose Dialog isn't a Box on top of the screen. It's a second window, and the feed lives in the first.</text>
+<text x="80" y="612" fill="#5c6472" font-size="12" font-weight="400" text-anchor="start">github.com/timkrest/Underlay</text>
+</svg>

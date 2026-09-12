@@ -44,6 +44,9 @@ gap is tracked upstream as
 Underlay covers that one case. For blur inside your own window use haze or Cloudy; the two combine,
 with Underlay drawing the backdrop and haze the live effect on top.
 
+The boundary, the two ways around it and what each one costs, at length:
+[the article](docs/article-window-boundary.md).
+
 ## How it degrades
 
 The backdrop comes from the best source the device offers:
