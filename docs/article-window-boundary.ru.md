@@ -155,7 +155,7 @@ Box-проходы идут по премультиплицированным к
 Всё вышеописанное я собрал в библиотеку.
 
 ```kotlin
-implementation("com.timkrest:underlay:0.3.1")
+implementation("com.timkrest:underlay:0.4.0")
 ```
 
 ```kotlin

@@ -133,7 +133,7 @@ drawing, which is why it is off by default.
 
 ```kotlin
 dependencies {
-    implementation("com.timkrest:underlay:0.3.1")
+    implementation("com.timkrest:underlay:0.4.0")
 }
 ```
 
