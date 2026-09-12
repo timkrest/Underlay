@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,7 +32,9 @@ internal fun ControlsPanel(
     blurRadius: Dp,
     overlaySource: UnderlaySource?,
     areTilesHardware: Boolean?,
+    isLiveSnapshot: Boolean,
     onBlurRadiusChange: (Dp) -> Unit,
+    onLiveSnapshotChange: (Boolean) -> Unit,
     onOpen: (OverlayKind) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -50,6 +53,7 @@ internal fun ControlsPanel(
         ) {
             BlurRadiusRow(blurRadius = blurRadius, overlaySource = overlaySource)
             BlurRadiusSlider(blurRadius = blurRadius, onBlurRadiusChange = onBlurRadiusChange)
+            LiveSnapshotRow(isLive = isLiveSnapshot, onLiveChange = onLiveSnapshotChange)
             tilesHint(areTilesHardware)?.let { hint -> Hint(text = hint) }
             Hint(text = crossWindowBlurHint(isCrossWindowBlurEnabled()))
             OverlayKindButtons(onOpen = onOpen)
@@ -69,6 +73,21 @@ private fun BlurRadiusRow(blurRadius: Dp, overlaySource: UnderlaySource?) {
             style = MaterialTheme.typography.titleMedium,
         )
         UnderlaySourceBadge(source = overlaySource, placeholder = "No overlay")
+    }
+}
+
+@Composable
+private fun LiveSnapshotRow(isLive: Boolean, onLiveChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = "Live snapshot", style = MaterialTheme.typography.titleMedium)
+            Hint(text = "Capture the host again every time it draws. Open a Popup and scroll the grid under it.")
+        }
+        Switch(checked = isLive, onCheckedChange = onLiveChange)
     }
 }
 
@@ -119,7 +138,9 @@ private fun ControlsPanelPreview() {
             blurRadius = DEFAULT_BLUR_RADIUS,
             overlaySource = UnderlaySource.Snapshot,
             areTilesHardware = true,
+            isLiveSnapshot = false,
             onBlurRadiusChange = { },
+            onLiveSnapshotChange = { },
             onOpen = { },
         )
     }

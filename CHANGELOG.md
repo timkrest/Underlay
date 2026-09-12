@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 recorded in [`underlay/api/underlay.api`](underlay/api/underlay.api) — may change in any minor
 version.
 
+## [Unreleased]
+
+### Added
+
+- `liveSnapshot` on `blurredUnderlay`. The host window is captured again every time it draws, one
+  capture in flight at a time, so a list scrolling under a popup shows through blurred a couple of
+  frames behind instead of frozen. Off by default: it costs a `PixelCopy` and a blur per host frame
+  for as long as the host keeps drawing. `SystemBlur` is live on its own and ignores it.
+
+### Changed
+
+- `:sample` opens its `Popup` without taking the touches outside it, so the grid scrolls under an
+  open popup, and the panel carries a switch for the live snapshot.
+
 ## [0.3.1] - 2026-09-10
 
 ### Fixed

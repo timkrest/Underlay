@@ -188,7 +188,7 @@ underneath, then takes the best thing available. Step one from above is `SystemB
 | Source | Requires | What it costs |
 | --- | --- | --- |
 | `SystemBlur` | API 31+, its own window, cross-window blur on | nothing, for the app |
-| `Snapshot` | API 23+, a reachable host window | the snapshot is frozen |
+| `Snapshot` | API 23+, a reachable host window | frozen, or a couple of frames behind with `liveSnapshot` |
 | `Pending` | — | only the tint until the capture lands |
 | `Fallback` | — | a solid colour |
 
@@ -252,9 +252,12 @@ arrives under the tint.
 
 A few things to know before you install it.
 
-The snapshot is frozen. It's taken when the overlay opens, again on a configuration change
-(rotation, split-screen) and whenever you call `refresh()`. Anything moving underneath isn't picked
-up on its own. For a popup over a scrolling list you want an in-window library, not this one.
+The snapshot is frozen by default. It's taken when the overlay opens, again on a configuration
+change (rotation, split-screen) and whenever you call `refresh()`. For a list scrolling under a
+popup there's `liveSnapshot = true`: the host window is captured again every time it draws, one
+capture in flight at a time, so the backdrop trails the host by a couple of frames. That's a
+`PixelCopy` and a blur per host frame for as long as the host keeps drawing, which is why it's off
+by default.
 
 `FLAG_BLUR_BEHIND` is a window flag, so `SystemBlur` blurs everything behind the overlay window,
 while `Snapshot` only blurs what's behind the composable. Put the modifier on a composable that

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -18,11 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.Popup
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
@@ -30,7 +27,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.math.abs
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -74,14 +70,14 @@ class SnapshotRefreshTest {
         awaitHostOf(Color.Red)
         openTheOverlay()
         awaitTheFirstSnapshot()
-        awaitBackdropOf(Color.Red.tinted())
+        awaitBackdropOf(Color.Red.tinted(TINT))
 
         hostColor = Color.Blue
         assertTheHostMovedOnWithout(itsSnapshot = Color.Red)
 
         compose.runOnUiThread { underlay.refresh() }
 
-        awaitBackdropOf(Color.Blue.tinted())
+        awaitBackdropOf(Color.Blue.tinted(TINT))
 
         hostColor = Color.Yellow
         assertTheHostMovedOnWithout(itsSnapshot = Color.Blue)
@@ -95,7 +91,7 @@ class SnapshotRefreshTest {
         }
 
         assertTrue(
-            screen.colorAt(backdropProbe()).matches(itsSnapshot.tinted()),
+            screen.colorAt(backdropProbe()).matches(itsSnapshot.tinted(TINT)),
             "the snapshot followed the host without a refresh: backdrop at ${backdropProbe()} is " +
                 "${screen.colorAt(backdropProbe())}, host at ${hostProbe()} is ${screen.colorAt(hostProbe())}, " +
                 "reported $reported",
@@ -163,26 +159,7 @@ class SnapshotRefreshTest {
         )
     }
 
-    @Composable
-    private fun DropTheWindowDim() {
-        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-
-        SideEffect { window?.setDimAmount(0f) }
-    }
-
-    private fun Color.tinted(): Color = Color(
-        red = TINT.red * TINT.alpha + red * (1f - TINT.alpha),
-        green = TINT.green * TINT.alpha + green * (1f - TINT.alpha),
-        blue = TINT.blue * TINT.alpha + blue * (1f - TINT.alpha),
-    )
-
-    private fun Color.matches(other: Color): Boolean =
-        abs(red - other.red) <= CHANNEL_TOLERANCE &&
-            abs(green - other.green) <= CHANNEL_TOLERANCE &&
-            abs(blue - other.blue) <= CHANNEL_TOLERANCE
-
     private companion object {
-        const val CHANNEL_TOLERANCE = 8f / 255f
         val TINT = Color.Green.copy(alpha = 0.5f)
         val BACKDROP_SIZE = 120.dp
         val HOST_PROBE_INSET = 16.dp

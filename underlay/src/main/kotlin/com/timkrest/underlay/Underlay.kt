@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.Dp
  * The blur comes from the best source the device offers: the system blurs behind the overlay window
  * on API 31+, a blurred snapshot of the host window otherwise, and [fallback] when neither works.
  * See [UnderlaySource]. The snapshot is taken again when the host window changes size or
- * configuration, and whenever [UnderlayState.refresh] is called on [state].
+ * configuration, whenever [UnderlayState.refresh] is called on [state], and with [liveSnapshot]
+ * every time the host window draws.
  *
  * In a composable that is not in a window of its own it draws [fallback] and nothing else: the host
  * window would then be this composable's own window, and blurring it would fold the overlay into
@@ -32,6 +33,11 @@ import androidx.compose.ui.unit.Dp
  *   design tools and `RenderEffect.createBlurEffect` give it.
  * @param tint drawn over the blurred content, usually a translucent black or white.
  * @param fallback solid color drawn when no blur is available at all.
+ * @param liveSnapshot capture the host window again every time it draws, so the snapshot follows
+ *   content that moves underneath, such as a list scrolling under a popup. One capture is in flight
+ *   at a time and the next starts when it lands, so the backdrop trails the host by a couple of
+ *   frames and costs a `PixelCopy` and a blur per host frame for as long as the host keeps drawing.
+ *   Off by default. The system blur is live on its own and ignores it.
  * @param state handle on this underlay: exposes the active [UnderlaySource] as Compose state and
  *   takes a fresh snapshot of the host window on [UnderlayState.refresh], for content that moves
  *   underneath a long-lived overlay. The system blur is live and ignores the refresh.
@@ -41,22 +47,25 @@ public fun Modifier.blurredUnderlay(
     blurRadius: Dp,
     tint: Color,
     fallback: Color,
+    liveSnapshot: Boolean = false,
     state: UnderlayState? = null,
     onSourceChange: ((UnderlaySource) -> Unit)? = null,
-): Modifier = this then UnderlayElement(blurRadius, tint, fallback, state, onSourceChange)
+): Modifier = this then UnderlayElement(blurRadius, tint, fallback, liveSnapshot, state, onSourceChange)
 
 private data class UnderlayElement(
     private val blurRadius: Dp,
     private val tint: Color,
     private val fallback: Color,
+    private val liveSnapshot: Boolean,
     private val state: UnderlayState?,
     private val onSourceChange: ((UnderlaySource) -> Unit)?,
 ) : ModifierNodeElement<UnderlayNode>() {
 
-    override fun create(): UnderlayNode = UnderlayNode(blurRadius, tint, fallback, state, onSourceChange)
+    override fun create(): UnderlayNode =
+        UnderlayNode(blurRadius, tint, fallback, liveSnapshot, state, onSourceChange)
 
     override fun update(node: UnderlayNode) {
-        node.update(blurRadius, tint, fallback, state, onSourceChange)
+        node.update(blurRadius, tint, fallback, liveSnapshot, state, onSourceChange)
     }
 
     override fun InspectorInfo.inspectableProperties() {
@@ -64,6 +73,7 @@ private data class UnderlayElement(
         properties["blurRadius"] = blurRadius
         properties["tint"] = tint
         properties["fallback"] = fallback
+        properties["liveSnapshot"] = liveSnapshot
         properties["state"] = state
     }
 }

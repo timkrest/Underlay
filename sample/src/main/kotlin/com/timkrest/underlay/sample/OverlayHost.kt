@@ -25,6 +25,7 @@ import com.timkrest.underlay.rememberUnderlayState
 internal fun OverlayHost(
     kind: OverlayKind?,
     blurRadius: Dp,
+    liveSnapshot: Boolean,
     underlayState: UnderlayState,
     onRefresh: () -> Unit,
     onBlurRadiusChange: (Dp) -> Unit,
@@ -38,6 +39,7 @@ internal fun OverlayHost(
             onDismiss = onDismiss,
             onRefresh = onRefresh,
             onBlurRadiusChange = onBlurRadiusChange,
+            liveSnapshot = liveSnapshot,
         )
     }
 
@@ -49,10 +51,11 @@ internal fun OverlayHost(
             card(kind)
         }
 
+        // Not focusable and not dismissed from outside, so the grid keeps taking touches under it.
         OverlayKind.PopupWindow -> Popup(
             alignment = Alignment.Center,
             onDismissRequest = onDismiss,
-            properties = PopupProperties(focusable = true),
+            properties = PopupProperties(focusable = false, dismissOnClickOutside = false),
         ) {
             card(kind)
         }
@@ -86,6 +89,7 @@ private fun OverlayHostPreview() {
         OverlayHost(
             kind = OverlayKind.SameWindow,
             blurRadius = DEFAULT_BLUR_RADIUS,
+            liveSnapshot = false,
             underlayState = rememberUnderlayState(),
             onRefresh = { },
             onBlurRadiusChange = { },

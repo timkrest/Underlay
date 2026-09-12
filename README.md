@@ -124,6 +124,11 @@ Box(
 The snapshot on screen stays until the new one is ready, so a refresh does not flash. `SystemBlur`
 blurs live and ignores the state.
 
+For content that keeps moving, `liveSnapshot = true` captures the host window again every time it
+draws, one capture in flight at a time, so a list scrolling under a popup shows through a couple of
+frames behind. It costs a `PixelCopy` and a blur per host frame for as long as the host keeps
+drawing, which is why it is off by default.
+
 ## Install
 
 ```kotlin
@@ -150,12 +155,12 @@ checked on every build.
 
 ## Trade-offs
 
-- **The snapshot is frozen.** It captures the host window once, again when that window changes size
-  or configuration, and on `UnderlayState.refresh()`. Content moving underneath is not picked up on
-  its own; for a popup over a scrolling list use an in-window library. A failed re-capture keeps the
-  snapshot on screen, unless the host resized and the old frame no longer lines up — then the
-  snapshot is dropped and only the tint is drawn until a capture succeeds, and `fallback` only if
-  none does.
+- **The snapshot is frozen unless asked to follow.** It captures the host window once, again when
+  that window changes size or configuration, and on `UnderlayState.refresh()`. Content moving
+  underneath is not picked up on its own; `liveSnapshot` picks it up a couple of frames behind, at
+  the price of a capture per host frame. A failed re-capture keeps the snapshot on screen, unless
+  the host resized and the old frame no longer lines up — then the snapshot is dropped and only the
+  tint is drawn until a capture succeeds, and `fallback` only if none does.
 - **`FLAG_BLUR_BEHIND` is a window flag.** `SystemBlur` blurs everything behind the overlay window;
   `Snapshot` blurs only what is behind the composable. Apply the modifier to a composable that fills
   the overlay window to get the same picture from both.

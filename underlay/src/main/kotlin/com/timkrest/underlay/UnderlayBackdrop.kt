@@ -3,6 +3,7 @@
 package com.timkrest.underlay
 
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.Window
 import android.view.WindowManager
 import androidx.compose.ui.graphics.ImageBitmap
@@ -25,11 +26,14 @@ internal class UnderlayBackdrop(
     private val onHostLayoutChange = View.OnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
         onHostResized(IntSize(right - left, bottom - top))
     }
+    private val onHostDraw = ViewTreeObserver.OnDrawListener { snapshot?.captureWhenIdle(sigma()) }
 
     private var radius: Dp = Dp.Hairline
     private var density: Density = Density(1f)
+    private var isLive = false
     private var hostSize = IntSize.Zero
     private var isSystemBlurApplied: Boolean? = null
+    private var isWatchingHostDraws = false
 
     val host: Window? get() = windows.host
 
@@ -43,14 +47,20 @@ internal class UnderlayBackdrop(
             else -> UnderlaySource.Pending
         }
 
-    fun start(radius: Dp, density: Density) {
+    fun start(radius: Dp, density: Density, isLive: Boolean) {
         this.radius = radius
         this.density = density
+        this.isLive = isLive
         windows.host?.decorView?.let { decorView ->
             hostSize = IntSize(decorView.width, decorView.height)
             decorView.addOnLayoutChangeListener(onHostLayoutChange)
         }
         chooseSource()
+    }
+
+    fun follow(isLive: Boolean) {
+        this.isLive = isLive
+        watchHostDraws()
     }
 
     fun reblur(radius: Dp, density: Density) {
@@ -66,6 +76,8 @@ internal class UnderlayBackdrop(
     }
 
     fun release() {
+        isLive = false
+        watchHostDraws()
         windows.host?.decorView?.removeOnLayoutChangeListener(onHostLayoutChange)
         systemBlur?.release()
         snapshot?.discard()
@@ -91,7 +103,18 @@ internal class UnderlayBackdrop(
             systemBlur?.withdraw()
             snapshot?.capture(sigma())
         }
+        watchHostDraws()
         onChange()
+    }
+
+    /** A live snapshot follows every frame the host draws, and only while the snapshot is what is drawn. */
+    private fun watchHostDraws() {
+        val observer = windows.host?.decorView?.viewTreeObserver ?: return
+        val shouldWatch = isLive && snapshot != null && isSystemBlurApplied != true
+        if (shouldWatch == isWatchingHostDraws || !observer.isAlive) return
+
+        isWatchingHostDraws = shouldWatch
+        if (shouldWatch) observer.addOnDrawListener(onHostDraw) else observer.removeOnDrawListener(onHostDraw)
     }
 
     private fun radiusPx(): Int = with(density) { radius.roundToPx() }

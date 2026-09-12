@@ -12,7 +12,7 @@ internal enum class OverlayKind(val label: String, val explanation: String, val 
 
     PopupWindow(
         label = "Popup",
-        explanation = "Own window via WindowManager. Host window available.",
+        explanation = "Own window via WindowManager. Host window available. Touches outside pass through: scroll the grid under it.",
         hasHostWindow = true,
     ),
 

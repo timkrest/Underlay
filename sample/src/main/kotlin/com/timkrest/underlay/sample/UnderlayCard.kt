@@ -39,6 +39,7 @@ internal fun UnderlayCard(
     onRefresh: () -> Unit,
     onBlurRadiusChange: (Dp) -> Unit,
     modifier: Modifier = Modifier,
+    liveSnapshot: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -48,6 +49,7 @@ internal fun UnderlayCard(
                 blurRadius = blurRadius,
                 tint = CARD_TINT,
                 fallback = MaterialTheme.colorScheme.surface,
+                liveSnapshot = liveSnapshot,
                 state = underlayState,
             )
             .border(1.dp, Color.White.copy(alpha = 0.16f), CARD_SHAPE)

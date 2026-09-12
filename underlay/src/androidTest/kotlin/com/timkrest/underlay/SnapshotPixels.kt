@@ -10,7 +10,10 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlin.math.abs
 import kotlin.math.roundToInt
+
+private const val CHANNEL_TOLERANCE = 8f / 255f
 
 internal fun ImageBitmap.pixelAt(x: Int, y: Int): Color {
     val readable = asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, false)
@@ -28,6 +31,18 @@ internal fun screenshot(): Bitmap {
 }
 
 internal fun Bitmap.colorAt(point: Offset): Color = Color(getPixel(point.x.roundToInt(), point.y.roundToInt()))
+
+internal fun Color.matches(other: Color): Boolean =
+    abs(red - other.red) <= CHANNEL_TOLERANCE &&
+        abs(green - other.green) <= CHANNEL_TOLERANCE &&
+        abs(blue - other.blue) <= CHANNEL_TOLERANCE
+
+/** What this color looks like on screen under a translucent [tint]. */
+internal fun Color.tinted(tint: Color): Color = Color(
+    red = tint.red * tint.alpha + red * (1f - tint.alpha),
+    green = tint.green * tint.alpha + green * (1f - tint.alpha),
+    blue = tint.blue * tint.alpha + blue * (1f - tint.alpha),
+)
 
 internal fun Modifier.reportCenterOnScreen(onCenter: (Offset) -> Unit): Modifier = onGloballyPositioned { coordinates ->
     onCenter(coordinates.localToScreen(Offset(coordinates.size.width / 2f, coordinates.size.height / 2f)))

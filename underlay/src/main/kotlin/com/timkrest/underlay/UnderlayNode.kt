@@ -29,6 +29,7 @@ internal class UnderlayNode(
     private var blurRadius: Dp,
     private var tint: Color,
     private var fallback: Color,
+    private var liveSnapshot: Boolean,
     private var state: UnderlayState?,
     private var onSourceChange: ((UnderlaySource) -> Unit)?,
 ) : Modifier.Node(),
@@ -83,10 +84,12 @@ internal class UnderlayNode(
         blurRadius: Dp,
         tint: Color,
         fallback: Color,
+        liveSnapshot: Boolean,
         state: UnderlayState?,
         onSourceChange: ((UnderlaySource) -> Unit)?,
     ) {
         val isRadiusNew = this.blurRadius != blurRadius
+        val isLivenessNew = this.liveSnapshot != liveSnapshot
         val previousState = this.state
         val isStateNew = previousState !== state
         val isRepaintNeeded = this.tint != tint || this.fallback != fallback
@@ -94,11 +97,13 @@ internal class UnderlayNode(
         this.blurRadius = blurRadius
         this.tint = tint
         this.fallback = fallback
+        this.liveSnapshot = liveSnapshot
         this.state = state
         this.onSourceChange = onSourceChange
         if (!isAttached) return
 
         if (isRadiusNew) backdrop?.reblur(blurRadius, requireDensity())
+        if (isLivenessNew) backdrop?.follow(liveSnapshot)
         if (isStateNew) {
             previousState?.source = null
             state?.source = reportedSource
@@ -135,7 +140,7 @@ internal class UnderlayNode(
 
         val backdrop = UnderlayBackdrop(windows, windowManager, blur, coroutineScope, ::onBackdropChanged)
         this.backdrop = backdrop
-        backdrop.start(blurRadius, requireDensity())
+        backdrop.start(blurRadius, requireDensity(), liveSnapshot)
     }
 
     private fun unbindWindows() {

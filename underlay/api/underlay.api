@@ -1,6 +1,6 @@
 public final class com/timkrest/underlay/UnderlayKt {
-	public static final fun blurredUnderlay-6Ivg_Sk (Landroidx/compose/ui/Modifier;FJJLcom/timkrest/underlay/UnderlayState;Lkotlin/jvm/functions/Function1;)Landroidx/compose/ui/Modifier;
-	public static synthetic fun blurredUnderlay-6Ivg_Sk$default (Landroidx/compose/ui/Modifier;FJJLcom/timkrest/underlay/UnderlayState;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Landroidx/compose/ui/Modifier;
+	public static final fun blurredUnderlay-jc59mvY (Landroidx/compose/ui/Modifier;FJJZLcom/timkrest/underlay/UnderlayState;Lkotlin/jvm/functions/Function1;)Landroidx/compose/ui/Modifier;
+	public static synthetic fun blurredUnderlay-jc59mvY$default (Landroidx/compose/ui/Modifier;FJJZLcom/timkrest/underlay/UnderlayState;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Landroidx/compose/ui/Modifier;
 }
 
 public final class com/timkrest/underlay/UnderlaySource : java/lang/Enum {

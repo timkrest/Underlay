@@ -30,6 +30,7 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
     var blurRadiusDp by rememberSaveable { mutableFloatStateOf(DEFAULT_BLUR_RADIUS.value) }
     var openKind by rememberSaveable { mutableStateOf<OverlayKind?>(null) }
     var backdropShift by rememberSaveable { mutableIntStateOf(0) }
+    var isLiveSnapshot by rememberSaveable { mutableStateOf(false) }
     val underlayState = rememberUnderlayState()
     val blurRadius = blurRadiusDp.dp
     val tiles = rememberGradientTiles()
@@ -42,7 +43,9 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
                     blurRadius = blurRadius,
                     overlaySource = underlayState.source,
                     areTilesHardware = tiles?.areHardware,
+                    isLiveSnapshot = isLiveSnapshot,
                     onBlurRadiusChange = { blurRadiusDp = it.value },
+                    onLiveSnapshotChange = { isLiveSnapshot = it },
                     onOpen = { kind ->
                         if (kind == OverlayKind.TranslucentActivity) {
                             context.startActivity(TranslucentOverlayActivity.intent(context, blurRadius))
@@ -65,6 +68,7 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
         OverlayHost(
             kind = openKind,
             blurRadius = blurRadius,
+            liveSnapshot = isLiveSnapshot,
             underlayState = underlayState,
             onRefresh = {
                 backdropShift++

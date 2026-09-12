@@ -31,10 +31,12 @@ internal class HostSnapshot(
     private var sigma: Float = 0f
     private var captureJob: Job? = null
     private var blurJob: Job? = null
+    private var isRecaptureWanted = false
 
     fun capture(sigma: Float) {
         this.sigma = sigma
         hasFailed = false
+        isRecaptureWanted = false
         captureJob?.cancel()
         blurJob?.cancel()
         onChange()
@@ -47,6 +49,18 @@ internal class HostSnapshot(
                 pristine = captured
                 blurPristine()
             }
+        }
+    }
+
+    /**
+     * Captures now, or once the capture in flight has landed: one capture at a time, so a host that
+     * draws faster than it can be captured is captured as often as it can be, never more.
+     */
+    fun captureWhenIdle(sigma: Float) {
+        if (captureJob?.isActive == true || blurJob?.isActive == true) {
+            isRecaptureWanted = true
+        } else {
+            capture(sigma)
         }
     }
 
@@ -63,6 +77,7 @@ internal class HostSnapshot(
         pristine = null
         image = null
         hasFailed = false
+        isRecaptureWanted = false
     }
 
     private suspend fun capturePristine(): Bitmap? = try {
@@ -85,6 +100,7 @@ internal class HostSnapshot(
                 hasFailed = true
             }
             onChange()
+            if (isRecaptureWanted) capture(this@HostSnapshot.sigma)
         }
     }
 }
