@@ -31,18 +31,16 @@ Dialog(onDismissRequest = ::dismiss) {
 
 ## Why this exists
 
-Compose blur libraries — [haze](https://github.com/chrisbanes/haze),
-[Cloudy](https://github.com/skydoves/Cloudy), [imla](https://github.com/desugar-64/imla) — blur a
-composable subtree: you mark it with a modifier, they capture it into a `GraphicsLayer` and blur
-that layer.
+Compose blur libraries — haze, Cloudy, imla — blur a composable subtree: you mark it with a
+modifier, they capture it into a `GraphicsLayer` and blur that layer.
 
 A `Dialog` renders in a **separate window**, and the content behind it belongs to the activity's
 window — a different render node tree. A modifier inside the dialog cannot reach it. The platform
 gap is tracked upstream as
 [Support window blur in compose dialogs](https://issuetracker.google.com/issues/296272625).
 
-Underlay covers that one case. For blur inside your own window use haze or Cloudy; the two combine,
-with Underlay drawing the backdrop and haze the live effect on top.
+Underlay covers that one case. For blur inside your own window use an in-window library; the two
+combine, with Underlay drawing the backdrop and the in-window library the live effect on top.
 
 The boundary, the two ways around it and what each one costs, at length:
 [the article](docs/article-window-boundary.md).

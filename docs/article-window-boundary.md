@@ -2,9 +2,9 @@
 
 [Русская версия](article-window-boundary.ru.md)
 
-A designer sent me a mockup: a card over a feed, frosted glass under the card. I wired up
-[haze](https://github.com/chrisbanes/haze), and the dialog blurred itself: the card's own contents
-went soft, and the feed behind it stayed perfectly sharp.
+A designer sent me a mockup: a card over a feed, frosted glass under the card. I wired up haze, and
+the dialog blurred itself: the card's own contents went soft, and the feed behind it stayed
+perfectly sharp.
 
 Swapping haze for `Modifier.blur()` gave the same result. So did reordering the modifiers, wrapping
 the whole thing in a `Box` and moving the modifier up to the parent.
@@ -19,10 +19,9 @@ window with its own `ViewRootImpl`, its own surface and its own render node tree
 composition lives inside that window. The feed you want blurred lives in the activity's window.
 
 Every in-window blur library works the same way: a modifier marks a subtree, the library grabs what
-that subtree drew and blurs it. haze, [Cloudy](https://github.com/skydoves/Cloudy),
-[imla](https://github.com/desugar-64/imla), `Modifier.blur()` from Compose itself all differ in how
-they do it, not in where: everything happens inside the window the modifier lives in, and the
-activity window's layer isn't reachable from there.
+that subtree drew and blurs it. haze, Cloudy, imla, `Modifier.blur()` from Compose itself all differ
+in how they do it, not in where: everything happens inside the window the modifier lives in, and
+the activity window's layer isn't reachable from there.
 
 ![Two windows, two render node trees; a modifier stops at the dialog's edge](window-boundary.svg)
 
@@ -223,9 +222,9 @@ a snapshot the whole time.
 | Plain overlay inside the activity | none | none | `Fallback` |
 
 About the last row: without a window of its own, the host window would be the caller's own window,
-so the snapshot would bake the overlay into its own backdrop. That's exactly the case haze is for,
-and the two combine fine: Underlay draws the backdrop from the other window, haze does the live
-effect on top of yours.
+so the snapshot would bake the overlay into its own backdrop. That's the case for an in-window
+library, and the two combine fine: Underlay draws the backdrop from the other window, the in-window
+library does the live effect on top of yours.
 
 A translucent activity does own a window but has no host: what's under it is another activity, and
 there's no way to get hold of that activity's `Window`, so `PixelCopy` has nothing to copy. It falls
