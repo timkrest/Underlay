@@ -22,7 +22,7 @@
 Compose отличаются механикой, но не местом: всё происходит внутри того окна, где живёт модификатор,
 а до слоя окна активити оттуда не дотянуться.
 
-![Два окна, два дерева render node; модификатор упирается в край диалога](window-boundary.svg)
+![Два окна, два дерева render node; модификатор упирается в край диалога](window-boundary.ru.svg)
 
 В Google про это знают, в трекере висит issue:
 [Support window blur in compose dialogs](https://issuetracker.google.com/issues/296272625).
