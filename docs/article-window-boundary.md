@@ -1,16 +1,16 @@
-# Blur behind a Compose dialog: why haze can't do it and what can
+# How to blur what's behind a Compose dialog, down to API 23
 
 [Русская версия](article-window-boundary.ru.md)
 
-A designer sent me a mockup: a card over a feed, frosted glass under the card. I wired up haze, and
-the dialog blurred itself: the card's own contents went soft, and the feed behind it stayed
-perfectly sharp.
+A designer sent me a mockup: a card over a feed, frosted glass under the card. I put
+`Modifier.blur()` on it, and the dialog blurred itself: the card's own contents went soft, and the
+feed behind it stayed perfectly sharp.
 
-Swapping haze for `Modifier.blur()` gave the same result. So did reordering the modifiers, wrapping
-the whole thing in a `Box` and moving the modifier up to the parent.
+A blur library instead of `Modifier.blur()` gave the same result. So did reordering the modifiers,
+wrapping the whole thing in a `Box` and moving the modifier up to the parent.
 
-Nothing is broken, neither haze nor Compose. The dialog is a separate window, and the rest of this
-post is about that boundary and how to get around it, from API 23 up.
+Nothing is broken. The dialog is a separate window, and the rest of this post is about that
+boundary and how to get around it, from API 23 up.
 
 ## Why a modifier can't reach the backdrop
 
