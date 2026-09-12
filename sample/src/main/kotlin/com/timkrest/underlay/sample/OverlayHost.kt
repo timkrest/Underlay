@@ -52,12 +52,17 @@ internal fun OverlayHost(
         }
 
         // Not focusable and not dismissed from outside, so the grid keeps taking touches under it.
-        OverlayKind.PopupWindow -> Popup(
-            alignment = Alignment.Center,
-            onDismissRequest = onDismiss,
-            properties = PopupProperties(focusable = false, dismissOnClickOutside = false),
-        ) {
-            card(kind)
+        // A window without focus never sees the back key, so the activity handles it.
+        OverlayKind.PopupWindow -> {
+            BackHandler(onBack = onDismiss)
+
+            Popup(
+                alignment = Alignment.Center,
+                onDismissRequest = onDismiss,
+                properties = PopupProperties(focusable = false, dismissOnClickOutside = false),
+            ) {
+                card(kind)
+            }
         }
 
         OverlayKind.SameWindow -> {

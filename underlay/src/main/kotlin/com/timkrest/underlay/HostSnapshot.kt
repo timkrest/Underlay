@@ -33,18 +33,18 @@ internal class HostSnapshot(
     private var blurJob: Job? = null
     private var isRecaptureWanted = false
 
+    /** Whatever is on screen, snapshot or fallback, stays there until this capture lands. */
     fun capture(sigma: Float) {
         this.sigma = sigma
-        hasFailed = false
         isRecaptureWanted = false
         captureJob?.cancel()
         blurJob?.cancel()
-        onChange()
         captureJob = onMain.launch {
             val captured = capturePristine()
             if (captured == null) {
                 hasFailed = true
                 onChange()
+                if (isRecaptureWanted) capture(this@HostSnapshot.sigma)
             } else {
                 pristine = captured
                 blurPristine()
