@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.underlay
 
-import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -83,19 +82,27 @@ class SnapshotRefreshTest {
         assertTheHostMovedOnWithout(itsSnapshot = Color.Blue)
     }
 
+    /** Until the overlay window draws the snapshot it has reported, the host shows through the tint in its place. */
     private fun assertTheHostMovedOnWithout(itsSnapshot: Color) {
-        lateinit var screen: Bitmap
-        compose.awaitOrFail({ "the host at ${hostProbe()} never turned $hostColor on screen" }) {
-            screen = screenshot()
-            screen.colorAt(hostProbe()).matches(hostColor)
+        val frozen = itsSnapshot.tinted(TINT)
+        compose.awaitOrFail({ "no $frozen backdrop at ${backdropProbe()} with a $hostColor host, ${state()}" }) {
+            val screen = screenshot()
+            screen.colorAt(hostProbe()).matches(hostColor) && screen.colorAt(backdropProbe()).matches(frozen)
         }
 
-        assertTrue(
-            screen.colorAt(backdropProbe()).matches(itsSnapshot.tinted(TINT)),
-            "the snapshot followed the host without a refresh: backdrop at ${backdropProbe()} is " +
-                "${screen.colorAt(backdropProbe())}, host at ${hostProbe()} is ${screen.colorAt(hostProbe())}, " +
-                "reported $reported",
-        )
+        repeat(FROZEN_FRAMES) {
+            assertTrue(
+                screenshot().colorAt(backdropProbe()).matches(frozen),
+                "the snapshot followed the host without a refresh: ${state()}",
+            )
+        }
+    }
+
+    private fun state(): String {
+        val screen = screenshot()
+
+        return "backdrop at ${backdropProbe()} is ${screen.colorAt(backdropProbe())}, " +
+            "host at ${hostProbe()} is ${screen.colorAt(hostProbe())}, reported $reported"
     }
 
     private fun hostProbe(): Offset = hostOnScreen ?: error("the host probe was never positioned")
@@ -162,6 +169,7 @@ class SnapshotRefreshTest {
     private companion object {
         val TINT = Color.Green.copy(alpha = 0.5f)
         val BACKDROP_SIZE = 120.dp
+        const val FROZEN_FRAMES = 3
         val HOST_PROBE_INSET = 16.dp
         val HOST_PROBE_SIZE = 24.dp
     }
