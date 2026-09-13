@@ -6,8 +6,8 @@ A designer sent me a mockup: a card over a feed, frosted glass under the card. I
 `Modifier.blur()` on it, and the dialog blurred itself: the card's own contents went soft, and the
 feed behind it stayed perfectly sharp.
 
-A blur library instead of `Modifier.blur()` gave the same result. So did reordering the modifiers,
-wrapping the whole thing in a `Box` and moving the modifier up to the parent.
+Reordering the modifiers gave the same result. So did wrapping the whole thing in a `Box` and moving
+the modifier up to the parent.
 
 Nothing is broken. The dialog is a separate window, and the rest of this post is about that
 boundary and how to get around it, from API 23 up.
@@ -18,10 +18,14 @@ A Compose `Dialog` isn't a `Box` on top of the screen. It's an `android.view.Win
 window with its own `ViewRootImpl`, its own surface and its own render node tree. The dialog's
 composition lives inside that window. The feed you want blurred lives in the activity's window.
 
-Every in-window blur library works the same way: a modifier marks a subtree, the library grabs what
-that subtree drew and blurs it. haze, Cloudy, imla, `Modifier.blur()` from Compose itself all differ
-in how they do it, not in where: everything happens inside the window the modifier lives in, and
-the activity window's layer isn't reachable from there.
+In-window blur works on a layer: a modifier marks a subtree, the library grabs what that subtree
+drew and blurs it. `Modifier.blur()`, Cloudy and imla all do that inside the window the modifier
+lives in — the activity window's layer isn't theirs to read.
+
+A library can carry its own recording across the boundary instead: haze records the subtree you mark
+with `hazeSource` and replays it under the effect in the dialog's window. That works when the
+backdrop is Compose you own and can mark. When it's a View hierarchy, a screen you don't own, or an
+overlay that isn't a subcomposition of it, there's nothing to mark and the boundary is back.
 
 ![Two windows, two render node trees; a modifier stops at the dialog's edge](window-boundary.svg)
 

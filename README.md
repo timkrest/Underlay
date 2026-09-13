@@ -31,16 +31,22 @@ Dialog(onDismissRequest = ::dismiss) {
 
 ## Why this exists
 
-Compose blur libraries — haze, Cloudy, imla — blur a composable subtree: you mark it with a
-modifier, they capture it into a `GraphicsLayer` and blur that layer.
+A `Dialog` renders in a **separate window**: the content behind it belongs to the activity's window,
+a different render node tree. `Modifier.blur()` inside the dialog blurs the dialog, not that content.
 
-A `Dialog` renders in a **separate window**, and the content behind it belongs to the activity's
-window — a different render node tree. A modifier inside the dialog cannot reach it. The platform
-gap is tracked upstream as
+Backdrop libraries do cross that boundary — haze records a subtree you mark with `hazeSource` and
+replays it under the effect,
+[dialogs included](https://chrisbanes.github.io/haze/latest/core-concepts/#dialogs). That needs the
+background to be Compose you own and can mark.
+
+Underlay is for when it isn't: the screen behind is Views or code you don't own, or your overlay is a
+`PopupWindow` rather than a subcomposition of it. Underlay asks nothing of the composition and works
+one level down, on windows — `FLAG_BLUR_BEHIND` on API 31+, a `PixelCopy` snapshot below that. The
+platform itself still has no answer here:
 [Support window blur in compose dialogs](https://issuetracker.google.com/issues/296272625).
 
-Underlay covers that one case. For blur inside your own window use an in-window library; the two
-combine, with Underlay drawing the backdrop and the in-window library the live effect on top.
+The two combine: Underlay draws the backdrop from the other window, an in-window library the live
+effect on top.
 
 The boundary, the two ways around it and what each one costs, at length:
 [the article](docs/article-window-boundary.md).
