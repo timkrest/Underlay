@@ -151,7 +151,8 @@ of a translucent window.
 Between the overlay appearing and the snapshot being ready there's a frame boundary, a `PixelCopy`
 and a blur. If you paint a solid colour in that gap, you get a flash. So while the capture is in
 flight only the tint gets drawn: the host shows through sharp and then settles into the blur. I
-treat that as a state of its own rather than a loading placeholder.
+treat that as a state of its own rather than a loading placeholder. The snapshot then fades in over
+200 ms.
 
 A solid colour only appears if the capture fails outright.
 
@@ -177,6 +178,17 @@ Dialog(onDismissRequest = ::dismiss) {
         // dialog content
     }
 }
+```
+
+Overlays built from Views get the same thing as the background of their root view, with the radius
+in pixels:
+
+```kotlin
+view.blurredUnderlay(
+    blurRadius = 16f * resources.displayMetrics.density,
+    tint = 0x4D000000,
+    fallback = surfaceColor,
+)
 ```
 
 `minSdk 23`, Apache 2.0, [github.com/timkrest/Underlay](https://github.com/timkrest/Underlay).
@@ -222,6 +234,8 @@ a snapshot the whole time.
 | --- | --- | --- | --- |
 | `Dialog` | the dialog window | the activity window | `SystemBlur` |
 | `Popup`, `PopupWindow` | a root view added through `WindowManager` | the activity window | `SystemBlur` |
+| `ModalBottomSheet`, `DropdownMenu` | their own window | the activity window | `SystemBlur` |
+| View `Dialog`, `BottomSheetDialog` | the dialog window | the activity window | `SystemBlur` |
 | Translucent activity | the activity window | none, what's under it is another activity | `SystemBlur` |
 | Plain overlay inside the activity | none | none | `Fallback` |
 
@@ -240,9 +254,9 @@ from `SystemBlur` straight to `Fallback`, skipping `Snapshot`.
 
 ## Something to poke at
 
-`:sample` has one button per kind of window (`Dialog`, `Popup`, translucent activity, plain
-in-window overlay) over a grid of hardware bitmaps. A badge shows which source won and a slider
-changes the radius.
+`:sample` has one button per kind of window (`Dialog`, `Popup`, a Material 3 bottom sheet, a View
+`Dialog`, translucent activity, plain in-window overlay) over a grid of hardware bitmaps. A badge
+shows which source won and a slider changes the radius.
 
 The interesting bit is manual: open an overlay on API 31+ and turn battery saver on. The badge
 switches from `System blur` to `Snapshot` and the picture doesn't flash, because the capture
