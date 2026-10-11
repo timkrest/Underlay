@@ -9,39 +9,37 @@ version.
 
 ### Added
 
-- `View.blurredUnderlay` and `ViewUnderlay` for overlays built from Views: `android.app.Dialog`,
-  `DialogFragment`, `BottomSheetDialog`, `PopupWindow`. The underlay becomes the view's background
-  until `remove()`. The radius is in pixels.
-- A snapshot fades in over 200 ms when it replaces another source. The fade follows the animator
-  duration scale, so with animations off the snapshot appears at once.
+- `View.blurredUnderlay` for overlays built from Views: `android.app.Dialog`, `DialogFragment`,
+  `BottomSheetDialog`, `PopupWindow`. It sets the underlay as the view's background until you call
+  `remove()` on the returned `ViewUnderlay`. The radius is in pixels.
+- A snapshot that replaces another source fades in over 200 ms. With animations off it appears at
+  once.
 
 ### Changed
 
 - `blurRadius` is the platform blur radius, the value `Modifier.blur` and `blurBehindRadius` take.
-  It used to be read as a Gaussian sigma on the snapshot, which blurred about 1.7 times harder than
-  the system blur below API 31 and slightly harder above it. All sources now blur equally hard.
-- A host window with `FLAG_SECURE` is captured only into an overlay window that is secure as well.
-  A snapshot taken before the host turned secure is dropped.
-- The library targets Kotlin 2.2 and depends on `kotlin-stdlib` 2.2.20, so D8 and R8 from AGP 8.x
-  read its metadata.
+  Snapshots used to blur harder for the same value: about 1.7 times below API 31, slightly above.
+  All sources now blur equally hard.
+- A host window with `FLAG_SECURE` is captured only into an overlay window that is also secure. A
+  snapshot taken before the host turned secure is dropped.
+- Targets Kotlin 2.2 and depends on `kotlin-stdlib` 2.2.20, so D8 and R8 from AGP 8.x can read its
+  metadata.
 - A negative or non-finite `blurRadius` means no blur.
-- The library no longer depends on `activity-compose`.
+- No longer depends on `activity-compose`.
 
 ### Fixed
 
-- A hardware snapshot drawn on a software canvas, such as a view with `LAYER_TYPE_SOFTWARE`, threw on
-  every frame. It is copied into a software bitmap there.
-- A Compose overlay whose window moved, such as a popup following its anchor, kept the snapshot in
-  the old place.
-- A Compose `Popup` that updated its properties lost the system blur while still reporting it.
-- On the CPU, changing the radius during a blur started a second blur next to the first. The new
-  radius now applies after the running blur.
-- A cancelled blur on the CPU ran to the end before the next one could start.
-- An `UnderlayState` moved to an overlay that replaced another went back to null when the old one
-  closed, and stayed null.
-- Removing the underlay switched off `FLAG_BLUR_BEHIND` and `blurBehindRadius` that the overlay
-  window had set itself. It now puts back what the window had when the underlay turned the flag on,
-  and leaves the window alone if it never turned the flag on.
+- A snapshot threw on every frame when drawn on a software canvas, such as a view with
+  `LAYER_TYPE_SOFTWARE`.
+- A Compose overlay that moved, such as a popup following its anchor, left the snapshot behind.
+- A Compose `Popup` that updated its properties lost the system blur but kept reporting it.
+- Changing the radius during a CPU blur started a second blur instead of applying after the first.
+- A cancelled CPU blur ran to the end before the next one could start.
+- An `UnderlayState` moved to an overlay that replaced another went back to null when the old
+  overlay closed.
+- Removing the underlay cleared `FLAG_BLUR_BEHIND` and `blurBehindRadius` that the overlay window
+  had set itself. It now restores what the window had, and leaves the window alone if the underlay
+  never turned the flag on.
 
 ## [0.4.0] - 2026-09-12
 

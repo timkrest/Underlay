@@ -1,60 +1,52 @@
 # Contributing
 
-The most useful issue is a device report: device, Android version, your `minSdk`, the output of
+For a device bug, include the device, Android version, your `minSdk`, the output of
 `adb shell dumpsys window | grep mBlurEnabled`, and the source `onSourceChange` reported.
 
 ## Building
+
+Needs JDK 21 and an Android SDK.
 
 ```
 ./gradlew build
 ```
 
-That compiles both modules, runs the unit tests, applies ktlint, checks the public API against
-[`underlay/api/underlay.api`](underlay/api/underlay.api) and assembles the library and the sample.
-It needs JDK 21 and an Android SDK.
+This runs ktlint, Android Lint, the unit tests and the API check against
+[`underlay/api/underlay.api`](underlay/api/underlay.api), and assembles both modules.
 
-Everything the library actually does — reading another window, the system flag, the blur itself —
-needs a device or an emulator:
+Instrumentation tests need a device or an emulator:
 
 ```
 ./gradlew :underlay:connectedDebugAndroidTest
 ```
 
-CI runs those on API 23, 26, 28, 31 and 34: the levels where the ladder changes shape.
-`decorView.draw()` is all there is below 26, `PixelCopy` arrives at 26, `FLAG_BLUR_BEHIND` at 31.
-The tests assert the step the device offers rather than the one its API level suggests, so an
-emulator or a phone with cross-window blur switched off is covered too.
+CI runs them on API 23, 26, 28, 31, 34 and 36: `decorView.draw()` below 26, `PixelCopy` from 26,
+`FLAG_BLUR_BEHIND` from 31, plus the newest level. Tests check the source the device actually
+offers, so a device with cross-window blur turned off passes too.
 
-To try a change by hand:
+The sample app: `./gradlew :sample:installDebug`.
 
-```
-./gradlew :sample:installDebug
-```
-
-## Before opening a pull request
+## Pull requests
 
 - Run `./gradlew build`.
-- Start any new file under a source set with the two-line SPDX header the others carry.
-  `.github/scripts/check-license-headers.sh` is the same check CI runs.
-- If you changed a public declaration, run `./gradlew apiDump` and commit the updated `.api` file.
-  It has to be a separate invocation, because Gradle refuses to write and verify the same dump in
-  one run. Kotlin mangles the name of anything taking a `Dp` or a `Color`, so adding a parameter to
-  `blurredUnderlay` shows up in the dump as one declaration leaving and another arriving.
-- Add a line under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md) for anything a caller would
+- New files under `src/` start with the SPDX header the others carry
+  (`.github/scripts/check-license-headers.sh`).
+- After changing a public declaration, run `./gradlew apiDump` on its own and commit the `.api`
+  file. A new `Dp` or `Color` parameter changes the mangled name, so the dump shows a removal and an
+  addition.
+- Removing a released declaration needs a minor version bump before 1.0.0 and a major one after
+  (`.github/scripts/check-api-compatibility.sh`).
+- Add an entry under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md) for anything a caller would
   notice.
 
-Contributions are covered by the [CLA](CLA.md); a bot asks you to sign it on your first pull
-request.
+Contributions fall under the [CLA](CLA.md). A bot asks you to sign it on your first pull request.
 
 ## Releasing
 
-For maintainers:
-
-1. Move the `Unreleased` entries under a `## [x.y.z] - yyyy-mm-dd` heading, add the matching link at
-   the bottom of the changelog, set `VERSION_NAME` in `gradle.properties`, and point the dependency
-   snippets in both READMEs and both articles at the new version. Same commit.
-2. Tag it: `git tag -a vx.y.z -m "Underlay x.y.z" && git push origin vx.y.z`. The tag is what the
-   release workflow publishes; `VERSION_NAME` only feeds the compatibility check on `main`.
-3. The workflow re-runs the checks and publishes to Maven Central, released rather than staged. A
-   removed declaration fails it unless the version left its release series — until 1.0.0 that means
-   a minor bump.
+1. In one commit: move the `Unreleased` entries under `## [x.y.z] - yyyy-mm-dd`, add the link at
+   the bottom of the changelog, set `VERSION_NAME` in `gradle.properties`, and update the version
+   in both READMEs and both articles.
+2. `git tag -a vx.y.z -m "Underlay x.y.z" && git push origin vx.y.z`.
+3. The release workflow reruns CI and publishes the tag to Maven Central without staging. It fails
+   if the tag doesn't match `VERSION_NAME`, the changelog has no entry, or the commit isn't on
+   `main`.
