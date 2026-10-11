@@ -3,13 +3,16 @@
 package com.timkrest.underlay
 
 import android.animation.ValueAnimator
+import android.content.Context
 import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
 import com.timkrest.underlay.backdrop.SnapshotFadeIn
 import com.timkrest.underlay.window.awaitVsync
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlin.math.roundToLong
 
 private const val FADE_IN_MILLIS = 200L
 
@@ -20,8 +23,8 @@ internal class SnapshotFader(private val scope: CoroutineScope, private val onFr
 
     val alpha: Float get() = fadeIn.alphaAt(SystemClock.uptimeMillis())
 
-    fun fadeIn() {
-        fadeIn = SnapshotFadeIn(SystemClock.uptimeMillis(), durationMillis())
+    fun fadeIn(durationScale: Float) {
+        fadeIn = SnapshotFadeIn(SystemClock.uptimeMillis(), (FADE_IN_MILLIS * durationScale).roundToLong())
         frames?.cancel()
         frames = scope.launch {
             while (fadeIn.isRunningAt(SystemClock.uptimeMillis())) {
@@ -35,9 +38,10 @@ internal class SnapshotFader(private val scope: CoroutineScope, private val onFr
         frames?.cancel()
         fadeIn = SnapshotFadeIn.Done
     }
+}
 
-    private fun durationMillis(): Long {
-        val areAnimationsOff = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ValueAnimator.areAnimatorsEnabled()
-        return if (areAnimationsOff) 0L else FADE_IN_MILLIS
-    }
+internal fun Context.animatorDurationScale(): Float {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ValueAnimator.areAnimatorsEnabled()) return 0f
+
+    return Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
 }

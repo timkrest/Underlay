@@ -33,7 +33,9 @@ internal class WindowCapture(private val window: Window, private val isAllowed: 
             awaitDrawnFrame()
             if (!isAllowed()) return null
             val destination = window.createCaptureBitmap()
-            if (destination != null && window.captureInto(destination)) return destination.asImageBitmap()
+            if (destination != null && window.captureInto(destination)) {
+                return destination.takeIf { isAllowed() }?.asImageBitmap()
+            }
         }
 
         return null

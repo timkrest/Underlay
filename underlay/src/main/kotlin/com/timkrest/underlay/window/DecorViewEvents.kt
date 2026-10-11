@@ -11,6 +11,7 @@ internal class DecorViewEvents(
     private val decorView: View,
     private val onResize: () -> Unit,
     onDraw: () -> Unit,
+    onPreDraw: () -> Unit,
 ) : HostWindowEvents {
 
     private var size = IntSize(decorView.width, decorView.height)
@@ -20,9 +21,14 @@ internal class DecorViewEvents(
         onLayout(IntSize(right - left, bottom - top))
     }
     private val drawListener = ViewTreeObserver.OnDrawListener { onDraw() }
+    private val preDrawListener = ViewTreeObserver.OnPreDrawListener {
+        onPreDraw()
+        true
+    }
 
     init {
         decorView.addOnLayoutChangeListener(layoutListener)
+        decorView.viewTreeObserver.addOnPreDrawListener(preDrawListener)
     }
 
     override fun followDraws(isFollowing: Boolean) {
@@ -36,6 +42,8 @@ internal class DecorViewEvents(
     override fun release() {
         followDraws(isFollowing = false)
         decorView.removeOnLayoutChangeListener(layoutListener)
+        val observer = decorView.viewTreeObserver
+        if (observer.isAlive) observer.removeOnPreDrawListener(preDrawListener)
     }
 
     private fun onLayout(newSize: IntSize) {

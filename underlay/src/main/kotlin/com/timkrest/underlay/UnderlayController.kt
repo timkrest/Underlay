@@ -3,6 +3,7 @@
 package com.timkrest.underlay
 
 import android.app.Activity
+import android.content.Context
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.ui.geometry.Offset
@@ -29,7 +30,7 @@ internal class UnderlayController(
     private val onRedraw: () -> Unit,
 ) {
 
-    private class Bound(val backdrop: UnderlayBackdrop, val windows: UnderlayWindows)
+    private class Bound(val backdrop: UnderlayBackdrop, val windows: UnderlayWindows, val context: Context)
 
     private val onMain = scope + Dispatchers.Main.immediate
     private val originInHost = OriginInHost()
@@ -50,10 +51,9 @@ internal class UnderlayController(
         originOf(view, offsetInView).also { drawnOrigin = it }
 
     fun needsRedrawBeforeDraw(view: View, offsetInView: Offset = Offset.Zero): Boolean {
-        val bound = bound ?: return false
-        val backdrop = bound.backdrop
+        val backdrop = bound?.backdrop ?: return false
         backdrop.reassertSystemBlur()
-        if (backdrop.image != null && !bound.windows.mayShowHost()) backdrop.startOver()
+        dropSnapshotIfHostTurnedSecure()
 
         return backdrop.source == UnderlaySource.Snapshot && originOf(view, offsetInView) != drawnOrigin
     }
@@ -65,11 +65,13 @@ internal class UnderlayController(
         val backdrop = UnderlayBackdrop(
             systemBlur = crossWindowBlurOrNull(windows.overlay, windowManager),
             snapshot = host?.let { HostSnapshot(WindowCapture(it, windows::mayShowHost), blur, onMain, ::onBackdropChange) },
-            hostEvents = host?.let { { onResize, onDraw -> DecorViewEvents(it.decorView, onResize, onDraw) } },
+            hostEvents = host?.let {
+                { onResize, onDraw -> DecorViewEvents(it.decorView, onResize, onDraw, ::dropSnapshotIfHostTurnedSecure) }
+            },
             onChange = ::onBackdropChange,
         )
 
-        bound = Bound(backdrop, windows)
+        bound = Bound(backdrop, windows, view.context)
         backdrop.start(radius, isLive)
     }
 
@@ -98,15 +100,21 @@ internal class UnderlayController(
         bound?.backdrop?.recapture()
     }
 
+    private fun dropSnapshotIfHostTurnedSecure() {
+        val bound = bound ?: return
+        if (bound.backdrop.image != null && !bound.windows.mayShowHost()) bound.backdrop.startOver()
+    }
+
     private fun originOf(view: View, offsetInView: Offset): IntOffset? =
         bound?.windows?.host?.let { host -> originInHost.of(view, host, offsetInView) }
 
     private fun onBackdropChange() {
-        val backdrop = bound?.backdrop ?: return
+        val bound = bound ?: return
+        val backdrop = bound.backdrop
         val wasShowingSnapshot = reportedSource == UnderlaySource.Snapshot
 
         report(backdrop.source)
-        if (!wasShowingSnapshot && backdrop.image != null) fader.fadeIn()
+        if (!wasShowingSnapshot && backdrop.image != null) fader.fadeIn(bound.context.animatorDurationScale())
         onRedraw()
     }
 

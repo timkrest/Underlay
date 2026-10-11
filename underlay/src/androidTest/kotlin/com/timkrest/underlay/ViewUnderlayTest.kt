@@ -4,9 +4,13 @@ package com.timkrest.underlay
 
 import android.app.Dialog
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
+import android.os.Build
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.PopupWindow
@@ -21,13 +25,16 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 class ViewUnderlayTest {
@@ -88,6 +95,117 @@ class ViewUnderlayTest {
     }
 
     @Test
+    fun aHostThatTurnsSecureTakesTheSnapshotAway() {
+        systemBlur.switchOff()
+        showInDialog()
+        compose.awaitOrFail({ "no snapshot to take away, reported $reported" }) {
+            reported.lastOrNull() == UnderlaySource.Snapshot
+        }
+
+        compose.runOnUiThread { compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+
+        compose.awaitOrFail({ "the snapshot outlived FLAG_SECURE, reported $reported" }) {
+            reported.lastOrNull() == UnderlaySource.Fallback
+        }
+    }
+
+    @Test
+    fun aNewTintShowsOverTheSameSnapshot() {
+        systemBlur.switchOff()
+        val content = showInDialog()
+        compose.awaitOrFail({ "no snapshot to tint, reported $reported" }) {
+            reported.lastOrNull() == UnderlaySource.Snapshot
+        }
+
+        compose.runOnUiThread { underlay.tint = OTHER_TINT.toArgb() }
+
+        compose.awaitOrFail({ "the new tint never showed" }) {
+            screenshot().colorAt(content.centerOnScreen()).matches(HOST.tinted(OTHER_TINT))
+        }
+    }
+
+    @Test
+    fun theUnderlayKeepsTheMinimumSizeOfThePreviousBackground() {
+        val view = compose.runOnUiThread {
+            View(compose.activity).apply {
+                background = GradientDrawable().apply { setSize(MINIMUM_WIDTH_PX, MINIMUM_HEIGHT_PX) }
+                installUnderlay(this)
+                measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            }
+        }
+
+        assertEquals(MINIMUM_WIDTH_PX, view.measuredWidth)
+        assertEquals(MINIMUM_HEIGHT_PX, view.measuredHeight)
+    }
+
+    @Test
+    fun removingTheUnderlayGivesTheWindowItsOwnBlurBack() {
+        assumeTrue("the emulator has no cross-window blur", isCrossWindowBlurEnabled())
+        var window: Window? = null
+        showInDialog(configureWindow = { dialogWindow ->
+            window = dialogWindow
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dialogWindow.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                dialogWindow.attributes = dialogWindow.attributes.apply { blurBehindRadius = OWN_BLUR_RADIUS_PX }
+            }
+        })
+        compose.awaitOrFail({ "no system blur to remove, reported $reported" }) {
+            reported.lastOrNull() == UnderlaySource.SystemBlur
+        }
+
+        compose.runOnUiThread { underlay.remove() }
+
+        val attributes = compose.runOnUiThread { checkNotNull(window).attributes }
+        assertTrue(attributes.flags and WindowManager.LayoutParams.FLAG_BLUR_BEHIND != 0, "the window lost its own blur")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) assertEquals(OWN_BLUR_RADIUS_PX, attributes.blurBehindRadius)
+    }
+
+    @Test
+    fun aViewThatLeavesTheWindowAndComesBackGetsItsBackdropBack() {
+        val content = showInDialog()
+        awaitBackdrop()
+        val parent = content.parent as ViewGroup
+
+        compose.runOnUiThread { parent.removeView(content) }
+        compose.runOnUiThread { assertNull(underlay.source) }
+        reported.clear()
+        compose.runOnUiThread { parent.addView(content, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT) }
+
+        awaitBackdrop()
+    }
+
+    @Test
+    fun installingAgainReplacesTheUnderlayAndKeepsTheOriginalBackground() {
+        val previous = ColorDrawable(Color.Blue.toArgb())
+        val content = showInDialog(background = previous)
+        awaitBackdrop()
+        val first = underlay
+
+        compose.runOnUiThread { installUnderlay(content) }
+        awaitBackdrop()
+        compose.runOnUiThread { underlay.remove() }
+
+        assertNull(first.source)
+        assertSame(previous, content.background)
+    }
+
+    @Test
+    fun removingWhileTheFirstCaptureRunsStopsTheReports() {
+        val previous = ColorDrawable(Color.Blue.toArgb())
+        val content = showInDialog(background = previous)
+
+        val reportsAtRemove = compose.runOnUiThread {
+            underlay.remove()
+            reported.size
+        }
+        SystemClock.sleep(SETTLE_MILLIS)
+
+        assertSame(previous, content.background)
+        assertNull(underlay.source)
+        assertEquals(reportsAtRemove, reported.size, "reported $reported after remove()")
+    }
+
+    @Test
     fun removingTheUnderlayPutsTheBackgroundBack() {
         val previous = ColorDrawable(Color.Blue.toArgb())
         val content = showInDialog(background = previous)
@@ -116,7 +234,11 @@ class ViewUnderlayTest {
         compose.runOnUiThread { assertSame(reported.last(), underlay.source) }
     }
 
-    private fun showInDialog(background: ColorDrawable? = null, isHostSecure: Boolean = false): View {
+    private fun showInDialog(
+        background: ColorDrawable? = null,
+        isHostSecure: Boolean = false,
+        configureWindow: (Window) -> Unit = {},
+    ): View {
         showHost()
         return compose.runOnUiThread {
             if (isHostSecure) compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
@@ -130,6 +252,7 @@ class ViewUnderlayTest {
                 setContentView(frame, ViewGroup.LayoutParams(CONTENT_PX, CONTENT_PX))
                 window?.setDimAmount(0f)
                 window?.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+                window?.let(configureWindow)
                 show()
             }
             dismiss = dialog::dismiss
@@ -173,6 +296,11 @@ class ViewUnderlayTest {
     private companion object {
         val HOST = Color.Red
         val FALLBACK = Color.Yellow
+        val OTHER_TINT = Color.Blue.copy(alpha = 0.5f)
         const val CONTENT_PX = 360
+        const val MINIMUM_WIDTH_PX = 120
+        const val MINIMUM_HEIGHT_PX = 80
+        const val OWN_BLUR_RADIUS_PX = 19
+        const val SETTLE_MILLIS = 500L
     }
 }

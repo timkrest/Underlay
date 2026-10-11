@@ -34,6 +34,7 @@ internal fun blurPixels(
     height: Int,
     radius: Int,
     scratch: IntArray = IntArray(pixels.size),
+    beforeEachPass: () -> Unit = {},
 ) {
     require(pixels.size == width * height) { "pixels.size=${pixels.size} does not match ${width}x$height" }
     require(scratch.size >= pixels.size) { "scratch.size=${scratch.size} cannot hold ${pixels.size} pixels" }
@@ -43,6 +44,7 @@ internal fun blurPixels(
 
     premultiply(pixels)
     repeat(BLUR_PASSES) {
+        beforeEachPass()
         blurRows(pixels, scratch, width, height, blurRadius)
         blurColumns(scratch, pixels, width, height, blurRadius)
     }

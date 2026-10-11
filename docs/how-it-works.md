@@ -50,7 +50,8 @@ CPU the sigma becomes the box radius whose three passes come nearest,
 channels, so a transparent neighbor does not bleed its color.
 
 A host window with `FLAG_SECURE` is captured only into an overlay window that is secure too, which a
-Compose `Dialog` or `Popup` is by default. Otherwise the snapshot step is skipped.
+Compose `Dialog` or `Popup` is by default. Otherwise the snapshot step is skipped, and a snapshot taken
+before the host turned secure is dropped.
 
 ## Trade-offs
 

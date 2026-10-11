@@ -12,8 +12,8 @@ version.
 - `View.blurredUnderlay` and `ViewUnderlay` for overlays built from Views: `android.app.Dialog`,
   `DialogFragment`, `BottomSheetDialog`, `PopupWindow`. The underlay becomes the view's background
   until `remove()`. The radius is in pixels.
-- A snapshot fades in over 200 ms when it replaces another source. With animations off it appears at
-  once.
+- A snapshot fades in over 200 ms when it replaces another source. The fade follows the animator
+  duration scale, so with animations off the snapshot appears at once.
 
 ### Changed
 
@@ -21,6 +21,9 @@ version.
   It used to be read as a Gaussian sigma on the snapshot, which blurred about 1.7 times harder than
   the system blur below API 31 and slightly harder above it. All sources now blur equally hard.
 - A host window with `FLAG_SECURE` is captured only into an overlay window that is secure as well.
+  A snapshot taken before the host turned secure is dropped.
+- The library targets Kotlin 2.2 and depends on `kotlin-stdlib` 2.2.20, so D8 and R8 from AGP 8.x
+  read its metadata.
 - A negative or non-finite `blurRadius` means no blur.
 - The library no longer depends on `activity-compose`.
 
@@ -32,6 +35,9 @@ version.
 - A Compose `Popup` that updated its properties lost the system blur while still reporting it.
 - On the CPU, changing the radius during a blur started a second blur next to the first. The new
   radius now applies after the running blur.
+- A cancelled blur on the CPU ran to the end before the next one could start.
+- Removing the underlay switched off `FLAG_BLUR_BEHIND` and `blurBehindRadius` that the overlay
+  window had set itself. It now puts them back as they were.
 
 ## [0.4.0] - 2026-09-12
 

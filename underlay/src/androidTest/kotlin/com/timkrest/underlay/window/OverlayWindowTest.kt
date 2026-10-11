@@ -79,19 +79,19 @@ class OverlayWindowTest {
         val detached = View(compose.activity).apply { layoutParams = WindowManager.LayoutParams() }
         val overlay = OverlayWindow.OfRootView(detached, windowManager)
 
-        assertFalse(compose.runOnUiThread { overlay.applyBlurBehind(RADIUS_PX) })
-        assertFalse(overlay.hasBlurBehind())
+        assertFalse(compose.runOnUiThread { overlay.setBlurBehind(BlurBehind.on(RADIUS_PX)) })
+        assertEquals(BlurBehind.Off, overlay.blurBehind)
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun assertBlurBehindTravels(overlay: OverlayWindow, attributes: () -> WindowManager.LayoutParams) {
-        assertTrue(compose.runOnUiThread { overlay.applyBlurBehind(RADIUS_PX) }, "the window refused the flag")
+        assertTrue(compose.runOnUiThread { overlay.setBlurBehind(BlurBehind.on(RADIUS_PX)) }, "the window refused the flag")
         compose.waitForIdle()
 
         assertTrue(attributes().hasBlurBehind(), "the flag never reached the window")
         assertEquals(RADIUS_PX, attributes().blurBehindRadius)
 
-        compose.runOnUiThread { overlay.clearBlurBehind() }
+        compose.runOnUiThread { overlay.setBlurBehind(BlurBehind.Off) }
         compose.waitForIdle()
 
         assertFalse(attributes().hasBlurBehind(), "the flag stayed on the window")

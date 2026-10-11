@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -24,7 +25,7 @@ internal class BoxBlurOnCpu : SnapshotBlur {
         if (radius == 0) return capture
 
         val image = buffersInUse.withLock {
-            withContext(Dispatchers.Default) { blurred(capture.asAndroidBitmap(), radius) }
+            withContext(Dispatchers.Default) { blurred(capture.asAndroidBitmap(), radius, throwIfCancelled = { ensureActive() }) }
         }
         lastResult = Blurred(capture, radius, image)
 
@@ -37,13 +38,14 @@ internal class BoxBlurOnCpu : SnapshotBlur {
 
     override fun release() = clearCache()
 
-    private fun blurred(capture: Bitmap, radius: Int): ImageBitmap {
+    private fun blurred(capture: Bitmap, radius: Int, throwIfCancelled: () -> Unit): ImageBitmap {
         val width = capture.width
         val height = capture.height
         val buffers = buffersFor(width * height)
 
         capture.getPixels(buffers.pixels, 0, width, 0, 0, width, height)
-        blurPixels(buffers.pixels, width, height, radius, buffers.scratch)
+        blurPixels(buffers.pixels, width, height, radius, buffers.scratch, beforeEachPass = throwIfCancelled)
+        throwIfCancelled()
 
         return createBitmap(width, height)
             .apply { setPixels(buffers.pixels, 0, width, 0, 0, width, height) }
