@@ -98,6 +98,21 @@ class UnderlaySourceTest {
         compose.awaitOrFail({ "the state kept ${state.source} after the overlay closed" }) { state.source == null }
     }
 
+    @Test
+    fun theStateFollowsTheOverlayThatReplacesAnother() {
+        val state = UnderlayState()
+        val isInPopup = mutableStateOf(true)
+        showUnderlay({ content -> if (isInPopup.value) inPopup(content) else inTheActivityWindow(content) }, state)
+        compose.awaitOrFail({ "no backdrop under the popup, the state has ${state.source}" }) {
+            state.source?.isBackdrop() == true
+        }
+
+        compose.runOnIdle { isInPopup.value = false }
+        compose.waitForIdle()
+
+        assertEquals(UnderlaySource.Fallback, state.source, "the closing popup wiped the state of its successor")
+    }
+
     private fun assertABackdropFromTheFirstReport(overlay: Overlay) {
         val reported = awaitSource(overlay) { it.isBackdrop() }
 

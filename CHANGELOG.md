@@ -37,6 +37,8 @@ version.
 - On the CPU, changing the radius during a blur started a second blur next to the first. The new
   radius now applies after the running blur.
 - A cancelled blur on the CPU ran to the end before the next one could start.
+- An `UnderlayState` moved to an overlay that replaced another went back to null when the old one
+  closed, and stayed null.
 - Removing the underlay switched off `FLAG_BLUR_BEHIND` and `blurBehindRadius` that the overlay
   window had set itself. It now puts back what the window had when the underlay turned the flag on,
   and leaves the window alone if it never turned the flag on.

@@ -72,7 +72,7 @@ internal class UnderlayNode(
         observedTree = null
         controller?.release()
         controller = null
-        state?.source = null
+        state?.withdraw(this)
         activity = null
         configuration = null
         positionInRoot = Offset.Zero
@@ -126,8 +126,8 @@ internal class UnderlayNode(
         if (isRadiusNew) controller?.setRadius(blurRadiusInPx())
         if (isLivenessNew) controller?.setLive(liveSnapshot)
         if (isStateNew) {
-            previousState?.source = null
-            state?.source = controller?.reportedSource
+            previousState?.withdraw(this)
+            state?.report(this, controller?.reportedSource)
             readHostContext()
         }
         if (isRepaintNeeded) invalidateDraw()
@@ -165,7 +165,7 @@ internal class UnderlayNode(
     private fun onSourceReported(source: UnderlaySource) {
         if (!isAttached) return
 
-        state?.source = source
+        state?.report(this, source)
         onSourceChange?.invoke(source)
     }
 

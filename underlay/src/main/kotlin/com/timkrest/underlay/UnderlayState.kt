@@ -29,7 +29,9 @@ public class UnderlayState {
      * before it is shown and after it is dismissed.
      */
     public var source: UnderlaySource? by mutableStateOf(null)
-        internal set
+        private set
+
+    private var reporter: Any? = null
 
     /**
      * Captures the host window again on a following frame. The snapshot on screen stays until the new
@@ -37,6 +39,18 @@ public class UnderlayState {
      */
     public fun refresh() {
         refreshes++
+    }
+
+    internal fun report(reporter: Any, source: UnderlaySource?) {
+        this.reporter = reporter
+        this.source = source
+    }
+
+    internal fun withdraw(reporter: Any) {
+        if (this.reporter !== reporter) return
+
+        this.reporter = null
+        source = null
     }
 }
 
