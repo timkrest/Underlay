@@ -28,6 +28,7 @@ internal fun viewDialogCard(
     context: Context,
     blurRadius: Dp,
     onBlurRadiusChange: (Dp) -> Unit,
+    onRefresh: () -> Unit,
     onClose: () -> Unit,
 ): LinearLayout = LinearLayout(context).apply {
     orientation = LinearLayout.VERTICAL
@@ -38,7 +39,7 @@ internal fun viewDialogCard(
     addView(label(OverlayKind.ViewDialog.label, TITLE_SP, Color.White))
     addView(label(OverlayKind.ViewDialog.explanation, BODY_SP, CARD_SECONDARY_TEXT).spacedBelow())
     addView(radiusSeekBar(blurRadius, onBlurRadiusChange).spacedBelow())
-    addView(closeButton(onClose).spacedBelow())
+    addView(buttonRow(onRefresh, onClose).spacedBelow())
 }
 
 private fun View.label(text: String, sizeSp: Float, color: Color) = TextView(context).apply {
@@ -63,12 +64,18 @@ private fun View.radiusSeekBar(blurRadius: Dp, onBlurRadiusChange: (Dp) -> Unit)
     )
 }
 
-private fun View.closeButton(onClose: () -> Unit) =
+private fun View.buttonRow(onRefresh: () -> Unit, onClose: () -> Unit) = LinearLayout(context).apply {
+    gravity = Gravity.END
+    addView(textButton("Shuffle backdrop", onRefresh))
+    addView(textButton("Close", onClose))
+}
+
+private fun View.textButton(text: String, onClick: () -> Unit) =
     Button(context, null, android.R.attr.borderlessButtonStyle).apply {
-        text = context.getString(android.R.string.cancel)
+        this.text = text
+        isAllCaps = false
         setTextColor(Color.White.toArgb())
-        gravity = Gravity.END or Gravity.CENTER_VERTICAL
-        setOnClickListener { onClose() }
+        setOnClickListener { onClick() }
     }
 
 private fun View.spacedBelow(): View = apply {
@@ -95,7 +102,7 @@ private fun ViewDialogCardPreview() {
     SampleTheme {
         AndroidView(
             factory = { context ->
-                viewDialogCard(context, DEFAULT_BLUR_RADIUS, onBlurRadiusChange = {}, onClose = {})
+                viewDialogCard(context, DEFAULT_BLUR_RADIUS, onBlurRadiusChange = {}, onRefresh = {}, onClose = {})
             },
         )
     }

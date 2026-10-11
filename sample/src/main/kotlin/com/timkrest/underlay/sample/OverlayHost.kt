@@ -83,6 +83,7 @@ internal fun OverlayHost(
             liveSnapshot = liveSnapshot,
             onSourceChange = onViewSourceChange,
             onBlurRadiusChange = onBlurRadiusChange,
+            onRefresh = onRefresh,
             onDismiss = onDismiss,
         )
 

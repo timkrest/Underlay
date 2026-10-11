@@ -22,6 +22,7 @@ internal fun ViewDialogOverlay(
     liveSnapshot: Boolean,
     onSourceChange: (UnderlaySource?) -> Unit,
     onBlurRadiusChange: (Dp) -> Unit,
+    onRefresh: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -30,6 +31,7 @@ internal fun ViewDialogOverlay(
     val currentLiveSnapshot by rememberUpdatedState(liveSnapshot)
     val currentOnSourceChange by rememberUpdatedState(onSourceChange)
     val currentOnBlurRadiusChange by rememberUpdatedState(onBlurRadiusChange)
+    val currentOnRefresh by rememberUpdatedState(onRefresh)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
 
     DisposableEffect(context) {
@@ -40,6 +42,10 @@ internal fun ViewDialogOverlay(
             onBlurRadiusChange = { radius ->
                 underlay.blurRadius = context.toPx(radius).toFloat()
                 currentOnBlurRadiusChange(radius)
+            },
+            onRefresh = {
+                currentOnRefresh()
+                underlay.refresh()
             },
             onClose = { currentOnDismiss() },
         )
