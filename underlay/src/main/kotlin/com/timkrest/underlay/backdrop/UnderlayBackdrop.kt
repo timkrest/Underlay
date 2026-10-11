@@ -18,9 +18,10 @@ internal class UnderlayBackdrop(
     private var rung: Rung? = null
     private var radius = BlurRadius.None
     private var isLive = false
+    private var isReleased = false
 
     private val systemBlur = systemBlur?.invoke(::climbLadder)
-    private val hostEvents = hostEvents?.invoke(::onHostResized, ::onHostDrawn)
+    private val hostEvents = hostEvents?.invoke(::startOver, ::onHostDrawn)
 
     val image: ImageBitmap? get() = snapshot?.image
 
@@ -47,19 +48,34 @@ internal class UnderlayBackdrop(
         if (rung == Rung.SystemBlur) climbLadder() else snapshot?.reblur(radius.snapshotSigma)
     }
 
+    fun reassertSystemBlur() {
+        if (rung == Rung.SystemBlur) climbLadder()
+    }
+
     fun recapture() {
-        if (rung == Rung.SystemBlur) return
+        if (isReleased || rung == Rung.SystemBlur) return
 
         snapshot?.capture(radius.snapshotSigma)
     }
 
+    fun startOver() {
+        if (isReleased) return
+
+        snapshot?.discard()
+        recapture()
+        onChange()
+    }
+
     fun release() {
+        isReleased = true
         hostEvents?.release()
         systemBlur?.release()
         snapshot?.discard()
     }
 
     private fun climbLadder() {
+        if (isReleased) return
+
         val reached = if (systemBlur?.request(radius.windowPx) == true) Rung.SystemBlur else Rung.Snapshot
         if (reached == rung) return
 
@@ -75,17 +91,15 @@ internal class UnderlayBackdrop(
         onChange()
     }
 
-    private fun onHostResized() {
-        snapshot?.discard()
-        recapture()
-        onChange()
-    }
-
     private fun onHostDrawn() {
+        if (isReleased) return
+
         snapshot?.captureWhenIdle(radius.snapshotSigma)
     }
 
     private fun followHostDraws() {
+        if (isReleased) return
+
         hostEvents?.followDraws(isLive && snapshot != null && rung == Rung.Snapshot)
     }
 }

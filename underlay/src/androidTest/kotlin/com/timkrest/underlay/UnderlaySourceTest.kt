@@ -15,7 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -31,19 +30,20 @@ class UnderlaySourceTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
+    @get:Rule
+    val systemBlur = SystemBlurRule()
+
     private val inTheActivityWindow: Overlay = { content -> content() }
     private val alertDialog: Overlay = { content -> BasicAlertDialog(onDismissRequest = {}) { content() } }
     private val bottomSheet: Overlay = { content -> ModalBottomSheet(onDismissRequest = {}) { content() } }
     private val dropdownMenu: Overlay = { content -> DropdownMenu(expanded = true, onDismissRequest = {}) { content() } }
 
-    @After
-    fun letTheSystemBlurAgain() = compose.restoreTheSystemBlur()
-
     @Test
-    fun anOverlayInsideTheActivityWindowReportsTheFallback() {
-        val reported = awaitSource(inTheActivityWindow) { it == UnderlaySource.Fallback }
+    fun anOverlayInsideTheActivityWindowReportsOnlyTheFallback() {
+        val reported = showUnderlay(inTheActivityWindow)
+        compose.waitForIdle()
 
-        assertEquals(UnderlaySource.Fallback, reported.last())
+        assertEquals(listOf(UnderlaySource.Fallback), reported)
     }
 
     @Test
@@ -105,7 +105,7 @@ class UnderlaySourceTest {
     }
 
     private fun assertTheSnapshotWins(overlay: Overlay) {
-        compose.takeTheSystemBlurOutOfTheLadder()
+        systemBlur.switchOff()
 
         val reported = awaitSource(overlay) { it.isBackdrop() }
 
@@ -128,15 +128,12 @@ class UnderlaySourceTest {
             reported.lastOrNull() == UnderlaySource.SystemBlur
         }
 
-        compose.takeTheSystemBlurOutOfTheLadder()
+        systemBlur.switchOff()
 
         compose.awaitOrFail({ "the ladder never reached the snapshot, reported $reported" }) {
             reported.lastOrNull() == UnderlaySource.Snapshot
         }
     }
-
-    private fun UnderlaySource.isBackdrop(): Boolean =
-        this == UnderlaySource.SystemBlur || this == UnderlaySource.Snapshot
 
     private fun awaitSource(overlay: Overlay, matches: (UnderlaySource) -> Boolean): List<UnderlaySource> {
         val reported = showUnderlay(overlay)

@@ -2,15 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.underlay.snapshot
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.Rect
+import android.os.Build
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -18,6 +21,8 @@ import androidx.core.graphics.withClip
 import kotlin.math.roundToInt
 
 internal fun DrawScope.drawSnapshot(snapshot: ImageBitmap, originInHost: IntOffset, alpha: Float) {
+    if (!snapshot.canBeDrawnOn(drawContext.canvas.nativeCanvas)) return
+
     val placement = SnapshotPlacement.of(
         originInHost = originInHost,
         size = IntSize(size.width.roundToInt(), size.height.roundToInt()),
@@ -48,6 +53,8 @@ internal class CanvasSnapshotPainter {
     }
 
     fun draw(canvas: Canvas, snapshot: ImageBitmap, viewOriginInHost: IntOffset, bounds: Rect, alpha: Int) {
+        if (!snapshot.canBeDrawnOn(canvas)) return
+
         val placement = SnapshotPlacement.of(
             originInHost = viewOriginInHost + IntOffset(bounds.left, bounds.top),
             size = IntSize(bounds.width(), bounds.height()),
@@ -62,3 +69,8 @@ internal class CanvasSnapshotPainter {
 
     private fun IntRect.copyInto(rect: Rect) = rect.set(left, top, right, bottom)
 }
+
+private fun ImageBitmap.canBeDrawnOn(canvas: Canvas): Boolean =
+    canvas.isHardwareAccelerated ||
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
+        asAndroidBitmap().config != Bitmap.Config.HARDWARE

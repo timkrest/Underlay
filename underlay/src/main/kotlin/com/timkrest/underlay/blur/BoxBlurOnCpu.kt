@@ -31,11 +31,11 @@ internal class BoxBlurOnCpu : SnapshotBlur {
         return image
     }
 
-    override fun forgetCaptures() {
+    override fun clearCache() {
         lastResult = null
     }
 
-    override fun release() = forgetCaptures()
+    override fun release() = clearCache()
 
     private fun blurred(capture: Bitmap, radius: Int): ImageBitmap {
         val width = capture.width

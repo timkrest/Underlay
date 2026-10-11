@@ -4,7 +4,7 @@ package com.timkrest.underlay
 
 import android.app.Activity
 import android.content.res.Configuration
-import androidx.activity.compose.LocalActivity
+import android.view.ViewTreeObserver
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -24,10 +24,12 @@ import androidx.compose.ui.node.requireGraphicsContext
 import androidx.compose.ui.node.requireLayoutCoordinates
 import androidx.compose.ui.node.requireView
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import com.timkrest.underlay.backdrop.BlurRadius
 import com.timkrest.underlay.blur.SnapshotBlur
 import com.timkrest.underlay.snapshot.drawSnapshot
+import com.timkrest.underlay.window.findActivity
 
 internal class UnderlayNode(
     private var blurRadius: Dp,
@@ -46,7 +48,12 @@ internal class UnderlayNode(
     private var activity: Activity? = null
     private var configuration: Configuration? = null
     private var refreshes = 0
-    private var positionInRoot: Offset? = null
+    private var positionInRoot = Offset.Zero
+    private var observedTree: ViewTreeObserver? = null
+    private val beforeDraw = ViewTreeObserver.OnPreDrawListener {
+        if (controller?.needsRedrawBeforeDraw(requireView(), positionInRoot) == true) invalidateDraw()
+        true
+    }
 
     override fun onAttach() {
         controller = UnderlayController(
@@ -57,15 +64,18 @@ internal class UnderlayNode(
         )
         readHostContext()
         bindWindows()
+        observedTree = requireView().viewTreeObserver.also { it.addOnPreDrawListener(beforeDraw) }
     }
 
     override fun onDetach() {
+        observedTree?.takeIf { it.isAlive }?.removeOnPreDrawListener(beforeDraw)
+        observedTree = null
         controller?.release()
         controller = null
         state?.source = null
         activity = null
         configuration = null
-        positionInRoot = null
+        positionInRoot = Offset.Zero
     }
 
     override fun onObservedReadsChanged() {
@@ -88,11 +98,7 @@ internal class UnderlayNode(
     }
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
-        val position = coordinates.positionInRoot()
-        if (position == positionInRoot) return
-
-        positionInRoot = position
-        if (controller?.source == UnderlaySource.Snapshot) invalidateDraw()
+        positionInRoot = coordinates.positionInRoot()
     }
 
     fun update(
@@ -137,7 +143,7 @@ internal class UnderlayNode(
     private fun DrawScope.drawHostSnapshot() {
         val controller = controller ?: return
         val snapshot = controller.snapshot ?: return
-        val origin = controller.snapshotOrigin(requireView(), requireLayoutCoordinates().positionInRoot()) ?: return
+        val origin = controller.originToDraw(requireView(), requireLayoutCoordinates().positionInRoot()) ?: return
 
         drawSnapshot(snapshot, origin, controller.snapshotAlpha)
     }
@@ -148,7 +154,7 @@ internal class UnderlayNode(
 
     private fun readHostContext() {
         observeReads {
-            activity = currentValueOf(LocalActivity)
+            activity = currentValueOf(LocalContext).findActivity()
             configuration = currentValueOf(LocalConfiguration)
             refreshes = state?.refreshes ?: 0
         }

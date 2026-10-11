@@ -18,14 +18,16 @@ import androidx.compose.ui.unit.Dp
  *
  * The system blurs everything behind the overlay window, a snapshot only what is behind this
  * composable: apply the modifier once per window, to a composable that fills it, for the same
- * picture from both.
+ * picture from both. The snapshot is always taken of the activity window, so under a dialog over a
+ * dialog it shows the activity, not the dialog in between.
  *
- * @param blurRadius blur strength, read as the standard deviation of a Gaussian.
+ * @param blurRadius blur radius, the same value `Modifier.blur` and `blurBehindRadius` take.
  * @param tint drawn over the blurred content, usually a translucent black or white.
  * @param fallback solid color drawn when no blur is available at all.
  * @param liveSnapshot capture the host window again every time it draws, so the snapshot follows
- *   content moving underneath a couple of frames behind, at a `PixelCopy` and a blur per host frame.
- *   The system blur is live on its own and ignores it.
+ *   content moving underneath a couple of frames behind, at a capture and a blur per host frame; below
+ *   API 26 the capture redraws the host in software. The system blur is live on its own and ignores
+ *   it.
  * @param state exposes the active [UnderlaySource] as Compose state and captures the host window
  *   again on [UnderlayState.refresh].
  * @param onSourceChange called whenever the active [UnderlaySource] changes.

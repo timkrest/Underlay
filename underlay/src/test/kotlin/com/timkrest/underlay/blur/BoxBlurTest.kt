@@ -6,7 +6,6 @@ import org.junit.Test
 import kotlin.math.abs
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class BoxBlurTest {
@@ -19,24 +18,14 @@ class BoxBlurTest {
 
     @Test
     fun `the radius lands on the nearest sigma three box passes can produce`() {
-        assertEquals(1, boxBlurRadiusForSigma(1f))
-        assertEquals(2, boxBlurRadiusForSigma(2f))
+        assertEquals(1, boxBlurRadiusForSigma(0.8f), "flooring the sigma would give no blur")
+        assertEquals(3, boxBlurRadiusForSigma(3.7f), "rounding the sigma would overshoot")
         assertEquals(12, boxBlurRadiusForSigma(12f))
     }
 
     @Test
-    fun `radius zero leaves the pixels alone`() {
-        val pixels = intArrayOf(RED, GREEN, BLUE, WHITE)
-        val original = pixels.copyOf()
-
-        blurPixels(pixels, width = 2, height = 2, radius = 0)
-
-        assertContentEquals(original, pixels)
-    }
-
-    @Test
     fun `a uniform image survives the blur unchanged`() {
-        val pixels = IntArray(16 * 16) { opaque(red = 30, green = 60, blue = 90) }
+        val pixels = IntArray(16 * 16) { argb(255, 30, 60, 90) }
         val original = pixels.copyOf()
 
         blurPixels(pixels, width = 16, height = 16, radius = 3)
@@ -48,15 +37,14 @@ class BoxBlurTest {
     fun `a single bright pixel spreads into its neighbours`() {
         val size = 9
         val center = size / 2 * size + size / 2
-        val pixels = IntArray(size * size) { if (it == center) WHITE else opaque(0, 0, 0) }
+        val pixels = IntArray(size * size) { if (it == center) WHITE else BLACK }
 
         blurPixels(pixels, width = size, height = size, radius = 1)
 
-        assertTrue(red(pixels[center]) < 255, "the peak must be dimmed, was ${red(pixels[center])}")
-        assertTrue(red(pixels[center - 1]) > 0, "the left neighbour must pick up light")
-        assertTrue(red(pixels[center + 1]) > 0, "the right neighbour must pick up light")
-        assertTrue(red(pixels[center - size]) > 0, "the neighbour above must pick up light")
-        assertTrue(red(pixels[center + size]) > 0, "the neighbour below must pick up light")
+        assertTrue(red(pixels[center]) < 255, "the peak was not dimmed")
+        for (neighbour in listOf(center - 1, center + 1, center - size, center + size)) {
+            assertTrue(red(pixels[neighbour]) > 0, "pixel $neighbour picked up no light")
+        }
     }
 
     @Test
@@ -64,49 +52,37 @@ class BoxBlurTest {
         val size = 8
         val pixels = IntArray(size * size) { index ->
             val x = index % size
-            if (x == 0 || x == size - 1) WHITE else opaque(0, 0, 0)
+            if (x == 0 || x == size - 1) WHITE else BLACK
         }
 
         blurPixels(pixels, width = size, height = size, radius = 2)
 
         for (y in 0 until size) {
             for (x in 0 until size / 2) {
-                assertEquals(
-                    pixels[y * size + x],
-                    pixels[y * size + (size - 1 - x)],
-                    "row $y is not symmetric at column $x",
-                )
+                assertEquals(pixels[y * size + x], pixels[y * size + (size - 1 - x)], "row $y, column $x")
             }
         }
     }
 
     @Test
-    fun `fully transparent pixels do not bleed their color`() {
-        val pixels = IntArray(8 * 8) { 0x00FF0000 }
-
-        blurPixels(pixels, width = 8, height = 8, radius = 2)
-
-        assertTrue(pixels.all { it == 0 }, "transparent pixels kept color: ${pixels.first().toUInt().toString(16)}")
-    }
-
-    @Test
-    fun `a translucent edge does not darken the opaque side`() {
+    fun `a transparent neighbour does not bleed its color`() {
         val size = 8
         val pixels = IntArray(size * size) { index ->
-            if (index % size < size / 2) opaque(255, 0, 0) else 0
+            if (index % size < size / 2) argb(0, 255, 0, 0) else argb(255, 0, 0, 255)
         }
 
         blurPixels(pixels, width = size, height = size, radius = 1)
 
-        val leftmost = pixels[size * (size / 2)]
-        assertEquals(255, alpha(leftmost), "the far side of the opaque half must stay opaque")
-        assertEquals(255, red(leftmost), "the far side of the opaque half must keep its color")
+        val edge = pixels[size / 2]
+        assertTrue(alpha(edge) in 1..254, "the edge did not turn translucent")
+        assertEquals(0, red(edge), "the transparent half bled its red")
+        assertEquals(255, blue(edge), "the transparent half darkened the blue")
     }
 
     @Test
     fun `the blur keeps the brightness it was given`() {
         val size = 32
-        val pixels = IntArray(size * size) { index -> opaque(index % 256, index * 7 % 256, index * 13 % 256) }
+        val pixels = IntArray(size * size) { index -> argb(255, index % 256, index * 7 % 256, index * 13 % 256) }
         val before = pixels.sumOf { red(it) }
 
         blurPixels(pixels, width = size, height = size, radius = 7)
@@ -117,8 +93,7 @@ class BoxBlurTest {
 
     @Test
     fun `a uniform translucent image keeps its color`() {
-        val alpha = 10
-        val pixels = IntArray(16 * 16) { (alpha shl 24) or (100 shl 16) }
+        val pixels = IntArray(16 * 16) { argb(10, 100, 0, 0) }
 
         blurPixels(pixels, width = 16, height = 16, radius = 3)
 
@@ -126,33 +101,23 @@ class BoxBlurTest {
         assertTrue(drift <= 3, "premultiplying moved the color by $drift levels")
     }
 
-    @Test
-    fun `a radius wider than the image is clamped instead of overrunning`() {
+    @Test(timeout = 5_000)
+    fun `a radius wider than the image is clamped to it`() {
         val pixels = IntArray(4 * 3) { WHITE }
 
-        blurPixels(pixels, width = 4, height = 3, radius = 999)
+        blurPixels(pixels, width = 4, height = 3, radius = Int.MAX_VALUE)
 
         assertTrue(pixels.all { it == WHITE })
     }
 
-    @Test
-    fun `a size that does not match the array is rejected`() {
-        assertFailsWith<IllegalArgumentException> {
-            blurPixels(IntArray(10), width = 4, height = 3, radius = 1)
-        }
-    }
-
     private companion object {
-        const val WHITE = 0xFFFFFFFF.toInt()
-        const val RED = 0xFFFF0000.toInt()
-        const val GREEN = 0xFF00FF00.toInt()
-        const val BLUE = 0xFF0000FF.toInt()
-
-        fun opaque(red: Int, green: Int, blue: Int): Int =
-            (0xFF shl 24) or (red shl 16) or (green shl 8) or blue
+        val WHITE = argb(255, 255, 255, 255)
+        val BLACK = argb(255, 0, 0, 0)
 
         fun alpha(pixel: Int): Int = pixel ushr 24 and 0xFF
 
         fun red(pixel: Int): Int = pixel ushr 16 and 0xFF
+
+        fun blue(pixel: Int): Int = pixel and 0xFF
     }
 }

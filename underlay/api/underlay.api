@@ -29,6 +29,7 @@ public final class com/timkrest/underlay/ViewUnderlay {
 	public final fun getBlurRadius ()F
 	public final fun getFallback ()I
 	public final fun getLiveSnapshot ()Z
+	public final fun getOnSourceChange ()Lcom/timkrest/underlay/ViewUnderlay$OnSourceChangeListener;
 	public final fun getSource ()Lcom/timkrest/underlay/UnderlaySource;
 	public final fun getTint ()I
 	public final fun refresh ()V
@@ -36,11 +37,18 @@ public final class com/timkrest/underlay/ViewUnderlay {
 	public final fun setBlurRadius (F)V
 	public final fun setFallback (I)V
 	public final fun setLiveSnapshot (Z)V
+	public final fun setOnSourceChange (Lcom/timkrest/underlay/ViewUnderlay$OnSourceChangeListener;)V
 	public final fun setTint (I)V
 }
 
-public final class com/timkrest/underlay/ViewUnderlayKt {
-	public static final fun blurredUnderlay (Landroid/view/View;FIIZLkotlin/jvm/functions/Function1;)Lcom/timkrest/underlay/ViewUnderlay;
-	public static synthetic fun blurredUnderlay$default (Landroid/view/View;FIIZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/timkrest/underlay/ViewUnderlay;
+public abstract interface class com/timkrest/underlay/ViewUnderlay$OnSourceChangeListener {
+	public abstract fun onSourceChange (Lcom/timkrest/underlay/UnderlaySource;)V
+}
+
+public final class com/timkrest/underlay/ViewUnderlays {
+	public static final fun blurredUnderlay (Landroid/view/View;FII)Lcom/timkrest/underlay/ViewUnderlay;
+	public static final fun blurredUnderlay (Landroid/view/View;FIIZ)Lcom/timkrest/underlay/ViewUnderlay;
+	public static final fun blurredUnderlay (Landroid/view/View;FIIZLcom/timkrest/underlay/ViewUnderlay$OnSourceChangeListener;)Lcom/timkrest/underlay/ViewUnderlay;
+	public static synthetic fun blurredUnderlay$default (Landroid/view/View;FIIZLcom/timkrest/underlay/ViewUnderlay$OnSourceChangeListener;ILjava/lang/Object;)Lcom/timkrest/underlay/ViewUnderlay;
 }
 

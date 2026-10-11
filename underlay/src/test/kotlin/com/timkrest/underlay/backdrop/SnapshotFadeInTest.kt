@@ -19,7 +19,8 @@ class SnapshotFadeInTest {
     }
 
     @Test
-    fun `with animations off the snapshot is whole at once`() {
-        assertFalse(SnapshotFadeIn(startedAtMillis = 0L, durationMillis = 0L).isRunningAt(0L))
+    fun `a fade of no length is whole at once`() {
+        assertEquals(1f, SnapshotFadeIn.Done.alphaAt(0L))
+        assertFalse(SnapshotFadeIn.Done.isRunningAt(0L))
     }
 }

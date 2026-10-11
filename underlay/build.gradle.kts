@@ -5,6 +5,8 @@ plugins {
 }
 
 android {
+    namespace = "com.timkrest.underlay"
+
     buildFeatures {
         compose = true
     }
@@ -15,10 +17,9 @@ dependencies {
     api(libs.androidx.compose.runtime)
     api(libs.androidx.compose.ui)
 
-    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.coroutines.core)
+    implementation(libs.coroutines.android)
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlin.test)

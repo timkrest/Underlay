@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.underlay
 
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,6 +32,9 @@ class SnapshotRefreshTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
+    @get:Rule
+    val systemBlur = SystemBlurRule()
+
     private var hostColor by mutableStateOf(Color.Red)
     private var isOverlayOpen by mutableStateOf(false)
     private val underlay = UnderlayState()
@@ -43,9 +46,6 @@ class SnapshotRefreshTest {
     @Volatile
     private var hostOnScreen: Offset? = null
 
-    @After
-    fun letTheSystemBlurAgain() = compose.restoreTheSystemBlur()
-
     @Test
     fun aRefreshUnderAPopupBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(inPopup)
 
@@ -53,7 +53,7 @@ class SnapshotRefreshTest {
     fun aRefreshUnderADialogBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(inUndimmedDialog)
 
     private fun assertARefreshBringsTheHostWindowBack(overlay: Overlay) {
-        compose.takeTheSystemBlurOutOfTheLadder()
+        systemBlur.switchOff()
         showHostAndOverlay(overlay)
         awaitHostOf(Color.Red)
         openTheOverlay()
@@ -79,6 +79,7 @@ class SnapshotRefreshTest {
         }
 
         repeat(FROZEN_FRAMES) {
+            SystemClock.sleep(FRAME_GAP_MILLIS)
             assertTrue(
                 screenshot().colorAt(backdropProbe()).matches(frozen),
                 "the snapshot followed the host without a refresh: ${state()}",
@@ -155,9 +156,8 @@ class SnapshotRefreshTest {
     }
 
     private companion object {
-        val TINT = Color.Green.copy(alpha = 0.5f)
-        val BACKDROP_SIZE = 120.dp
         const val FROZEN_FRAMES = 3
+        const val FRAME_GAP_MILLIS = 100L
         val HOST_PROBE_INSET = 16.dp
         val HOST_PROBE_SIZE = 24.dp
     }

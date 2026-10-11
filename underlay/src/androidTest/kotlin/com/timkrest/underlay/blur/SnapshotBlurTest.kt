@@ -3,13 +3,6 @@
 package com.timkrest.underlay.blur
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsContext
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -18,16 +11,11 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.underlay.pixelAt
-import com.timkrest.underlay.window.captureInto
-import com.timkrest.underlay.window.createCaptureBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.test.assertNotNull
-import kotlin.test.assertNotSame
-import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -38,82 +26,34 @@ class SnapshotBlurTest {
 
     @Test
     fun theSeamBetweenTwoHalvesComesOutMixed() {
-        val blurred = blurredHalves()
-
-        val seam = blurred.pixelAt(blurred.width / 2, blurred.height / 2)
-        assertTrue(seam.red in MIXED, "expected red mixed into the seam, got $seam")
-        assertTrue(seam.blue in MIXED, "expected blue mixed into the seam, got $seam")
-    }
-
-    @Test
-    fun theCpuBlurAnswersASigmaOfTheSameRadiusFromWhatItKeeps() {
-        val engine = BoxBlurOnCpu()
-        val capture = halves()
-
-        val blurred = runBlocking { engine.blur(capture, SIGMA) }
-        val nudged = runBlocking { engine.blur(capture, SIGMA + SAME_RADIUS_NUDGE) }
-
-        assertSame(blurred, nudged, "the same radius over the same capture was blurred twice")
-    }
-
-    @Test
-    fun theCpuBlurBlursAgainForAnotherRadius() {
-        val engine = BoxBlurOnCpu()
-        val capture = halves()
-
-        val blurred = runBlocking { engine.blur(capture, SIGMA) }
-        val weaker = runBlocking { engine.blur(capture, WEAKER_SIGMA) }
-
-        assertNotSame(blurred, weaker, "a new radius came back from the cache")
-    }
-
-    @Test
-    fun theCpuBlurBlursAgainForAnotherCapture() {
-        val engine = BoxBlurOnCpu()
-
-        val blurred = runBlocking { engine.blur(halves(), SIGMA) }
-        val recaptured = runBlocking { engine.blur(halves(), SIGMA) }
-
-        assertNotSame(blurred, recaptured, "a fresh capture came back from the cache")
-    }
-
-    private fun blurredHalves(): ImageBitmap {
         lateinit var graphicsContext: GraphicsContext
-        compose.setContent {
-            graphicsContext = LocalGraphicsContext.current
-            Row(Modifier.fillMaxSize()) {
-                Box(Modifier.fillMaxHeight().weight(1f).background(Color.Red))
-                Box(Modifier.fillMaxHeight().weight(1f).background(Color.Blue))
-            }
-        }
+        compose.setContent { graphicsContext = LocalGraphicsContext.current }
         compose.waitForIdle()
 
-        return runBlocking(Dispatchers.Main) {
-            val window = compose.activity.window
-            val capture = assertNotNull(window.createCaptureBitmap(), "the host window is not drawable")
-            assertTrue(window.captureInto(capture), "the host window could not be captured")
+        val blurred = runBlocking(Dispatchers.Main) {
             val blur = SnapshotBlur.bestAvailable { graphicsContext }
             try {
-                blur.blur(capture.asImageBitmap(), SIGMA)
+                blur.blur(halves(), SIGMA)
             } finally {
                 blur.release()
             }
         }
-    }
 
-    private fun halves(): ImageBitmap {
-        val pixels = IntArray(SIZE * SIZE) { if (it % SIZE < SIZE / 2) OPAQUE_RED else OPAQUE_BLUE }
-
-        return createBitmap(SIZE, SIZE).apply { setPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE) }.asImageBitmap()
+        val seam = blurred.pixelAt(blurred.width / 2, blurred.height / 2)
+        assertTrue(seam.red in MIXED && seam.blue in MIXED, "the seam was not mixed: $seam")
     }
 
     private companion object {
         const val SIGMA = 8f
-        const val SAME_RADIUS_NUDGE = 0.05f
-        const val WEAKER_SIGMA = 2f
-        const val SIZE = 64
-        const val OPAQUE_RED = 0xFFFF0000.toInt()
-        const val OPAQUE_BLUE = 0xFF0000FF.toInt()
         val MIXED = 0.15f..0.85f
     }
 }
+
+internal fun halves(size: Int = 64): ImageBitmap {
+    val pixels = IntArray(size * size) { if (it % size < size / 2) OPAQUE_RED else OPAQUE_BLUE }
+
+    return createBitmap(size, size).apply { setPixels(pixels, 0, size, 0, 0, size, size) }.asImageBitmap()
+}
+
+private const val OPAQUE_RED = 0xFFFF0000.toInt()
+private const val OPAQUE_BLUE = 0xFF0000FF.toInt()

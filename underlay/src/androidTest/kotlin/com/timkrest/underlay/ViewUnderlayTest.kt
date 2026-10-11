@@ -7,6 +7,7 @@ import android.graphics.drawable.ColorDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.PopupWindow
 import androidx.activity.ComponentActivity
@@ -34,6 +35,9 @@ class ViewUnderlayTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
+    @get:Rule
+    val systemBlur = SystemBlurRule()
+
     private val reported = CopyOnWriteArrayList<UnderlaySource>()
     private var dismiss: () -> Unit = {}
     private lateinit var underlay: ViewUnderlay
@@ -41,7 +45,6 @@ class ViewUnderlayTest {
     @After
     fun closeTheOverlay() {
         compose.runOnUiThread { dismiss() }
-        compose.restoreTheSystemBlur()
     }
 
     @Test
@@ -49,7 +52,7 @@ class ViewUnderlayTest {
         showInDialog()
 
         awaitBackdrop()
-        assertFalse(UnderlaySource.Fallback in reported, "an overlay in its own window never falls back")
+        assertFalse(UnderlaySource.Fallback in reported)
     }
 
     @Test
@@ -57,12 +60,12 @@ class ViewUnderlayTest {
         showInPopupWindow()
 
         awaitBackdrop()
-        assertFalse(UnderlaySource.Fallback in reported, "an overlay in its own window never falls back")
+        assertFalse(UnderlaySource.Fallback in reported)
     }
 
     @Test
     fun withoutSystemBlurAViewDialogDrawsTheHostBehindIt() {
-        compose.takeTheSystemBlurOutOfTheLadder()
+        systemBlur.switchOff()
 
         val content = showInDialog()
 
@@ -70,6 +73,18 @@ class ViewUnderlayTest {
             reported.lastOrNull() == UnderlaySource.Snapshot &&
                 screenshot().colorAt(content.centerOnScreen()).matches(HOST.tinted(TINT))
         }
+    }
+
+    @Test
+    fun aSecureHostIsNotShownInAnOverlayThatIsNot() {
+        systemBlur.switchOff()
+
+        showInDialog(isHostSecure = true)
+
+        compose.awaitOrFail({ "the secure host was not refused, reported $reported" }) {
+            reported.lastOrNull() == UnderlaySource.Fallback
+        }
+        assertFalse(UnderlaySource.Snapshot in reported)
     }
 
     @Test
@@ -84,20 +99,35 @@ class ViewUnderlayTest {
         assertNull(underlay.source)
     }
 
+    @Test
+    fun anotherBackgroundTakesTheUnderlayOff() {
+        val content = showInDialog()
+        awaitBackdrop()
+
+        compose.runOnUiThread { content.background = ColorDrawable(Color.Blue.toArgb()) }
+
+        compose.awaitOrFail({ "the underlay kept running under another background" }) { underlay.source == null }
+    }
+
     private fun awaitBackdrop() {
         compose.awaitOrFail({ "no backdrop under the view, reported $reported" }) {
-            reported.lastOrNull() == UnderlaySource.SystemBlur || reported.lastOrNull() == UnderlaySource.Snapshot
+            reported.lastOrNull()?.isBackdrop() == true
         }
         compose.runOnUiThread { assertSame(reported.last(), underlay.source) }
     }
 
-    private fun showInDialog(background: ColorDrawable? = null): View {
+    private fun showInDialog(background: ColorDrawable? = null, isHostSecure: Boolean = false): View {
         showHost()
         return compose.runOnUiThread {
-            val content = FrameLayout(compose.activity).apply { this.background = background }
+            if (isHostSecure) compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            val content = View(compose.activity).apply { this.background = background }
             installUnderlay(content)
+            val frame = FrameLayout(compose.activity).apply {
+                setBackgroundColor(BEHIND_THE_BACKDROP.toArgb())
+                addView(content, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            }
             val dialog = Dialog(compose.activity).apply {
-                setContentView(content, ViewGroup.LayoutParams(CONTENT_PX, CONTENT_PX))
+                setContentView(frame, ViewGroup.LayoutParams(CONTENT_PX, CONTENT_PX))
                 window?.setDimAmount(0f)
                 window?.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
                 show()
@@ -142,8 +172,7 @@ class ViewUnderlayTest {
 
     private companion object {
         val HOST = Color.Red
-        val TINT = Color.Green.copy(alpha = 0.5f)
-        val FALLBACK = Color.Magenta
+        val FALLBACK = Color.Yellow
         const val CONTENT_PX = 360
     }
 }

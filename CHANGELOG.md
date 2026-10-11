@@ -12,20 +12,26 @@ version.
 - `View.blurredUnderlay` and `ViewUnderlay` for overlays built from Views: `android.app.Dialog`,
   `DialogFragment`, `BottomSheetDialog`, `PopupWindow`. The underlay becomes the view's background
   until `remove()`. The radius is in pixels.
-- The first snapshot fades in over 200 ms. With animations off it appears at once.
+- A snapshot fades in over 200 ms when it replaces another source. With animations off it appears at
+  once.
 
 ### Changed
 
-- A radius change during a blur is applied after that blur. On the CPU the old blur kept running
-  next to the new one.
-- The CPU blur reuses its buffers between frames.
+- `blurRadius` is the platform blur radius, the value `Modifier.blur` and `blurBehindRadius` take.
+  It used to be read as a Gaussian sigma on the snapshot, which blurred about 1.7 times harder than
+  the system blur below API 31 and slightly harder above it. All sources now blur equally hard.
+- A host window with `FLAG_SECURE` is captured only into an overlay window that is secure as well.
 - A negative or non-finite `blurRadius` means no blur.
-- `:sample` opens a Material 3 `ModalBottomSheet` and a `Dialog` built from Views.
+- The library no longer depends on `activity-compose`.
 
 ### Fixed
 
-- An overlay that moved without redrawing, such as a dragged bottom sheet, kept the snapshot in the
-  old place.
+- A hardware snapshot drawn on a software canvas threw on every frame. It is skipped there.
+- A Compose overlay whose window moved, such as a popup following its anchor, kept the snapshot in
+  the old place.
+- A Compose `Popup` that updated its properties lost the system blur while still reporting it.
+- On the CPU, changing the radius during a blur started a second blur next to the first. The new
+  radius now applies after the running blur.
 
 ## [0.4.0] - 2026-09-12
 
@@ -68,7 +74,7 @@ version.
 
 - `UnderlayState.source`: the `UnderlaySource` the overlay carrying the state draws from, as Compose
   state. Null while no overlay carries it, so a badge outside the overlay clears on dismiss without
-  hosting the value from `onSourceChange` by hand. The callback stays for callers without a state.
+  hoisting the value from `onSourceChange` by hand. The callback stays for callers without a state.
 
 ### Fixed
 

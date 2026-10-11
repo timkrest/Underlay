@@ -24,11 +24,14 @@ import kotlin.coroutines.resume
 
 private const val CAPTURE_ATTEMPTS = 3
 
-internal class WindowCapture(private val window: Window) : HostCapture {
+private val mainHandler = Handler(Looper.getMainLooper())
+
+internal class WindowCapture(private val window: Window, private val isAllowed: () -> Boolean) : HostCapture {
 
     override suspend fun capture(): ImageBitmap? {
         repeat(CAPTURE_ATTEMPTS) {
             awaitDrawnFrame()
+            if (!isAllowed()) return null
             val destination = window.createCaptureBitmap()
             if (destination != null && window.captureInto(destination)) return destination.asImageBitmap()
         }
@@ -72,7 +75,7 @@ private suspend fun Window.requestPixelCopy(destination: Bitmap): Boolean =
             hostPixelsCapturedInto(destination),
             destination,
             { result -> continuation.resume(result == PixelCopy.SUCCESS) },
-            Handler(Looper.getMainLooper()),
+            mainHandler,
         )
     }
 

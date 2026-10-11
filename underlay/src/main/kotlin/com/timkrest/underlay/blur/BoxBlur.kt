@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.underlay.blur
 
+import androidx.core.graphics.alpha
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sqrt
@@ -60,21 +64,39 @@ private fun blurLines(
     pixelStride: Int,
     radius: Int,
 ) {
-    val window = radius * 2 + 1
+    val boxSize = radius * 2 + 1
+    val rounding = boxSize / 2
     val last = length - 1
-    val sums = ChannelSums()
 
     for (line in 0 until lines) {
         val start = line * lineStride
         fun pixelAt(index: Int) = source[start + index.coerceIn(0, last) * pixelStride]
 
-        sums.reset()
-        for (offset in -radius..radius) sums.add(pixelAt(offset))
+        var alpha = 0
+        var red = 0
+        var green = 0
+        var blue = 0
+        for (offset in -radius..radius) {
+            val pixel = pixelAt(offset)
+            alpha += pixel.alpha
+            red += pixel.red
+            green += pixel.green
+            blue += pixel.blue
+        }
 
         for (index in 0 until length) {
-            target[start + index * pixelStride] = sums.average(window)
-            sums.add(pixelAt(index + radius + 1))
-            sums.subtract(pixelAt(index - radius))
+            target[start + index * pixelStride] = argb(
+                alpha = (alpha + rounding) / boxSize,
+                red = (red + rounding) / boxSize,
+                green = (green + rounding) / boxSize,
+                blue = (blue + rounding) / boxSize,
+            )
+            val entering = pixelAt(index + radius + 1)
+            val leaving = pixelAt(index - radius)
+            alpha += entering.alpha - leaving.alpha
+            red += entering.red - leaving.red
+            green += entering.green - leaving.green
+            blue += entering.blue - leaving.blue
         }
     }
 }

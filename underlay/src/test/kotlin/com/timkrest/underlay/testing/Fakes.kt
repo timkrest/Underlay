@@ -14,7 +14,7 @@ import com.timkrest.underlay.blur.SnapshotBlur
 import com.timkrest.underlay.snapshot.HostCapture
 import kotlinx.coroutines.CompletableDeferred
 
-internal open class FakeImage(val name: String) : ImageBitmap {
+internal open class FakeImage(private val name: String) : ImageBitmap {
     override val width: Int = 4
     override val height: Int = 4
     override val colorSpace: ColorSpace = ColorSpaces.Srgb
@@ -40,44 +40,33 @@ internal class BlurredImage(val capture: ImageBitmap, val sigma: Float) : FakeIm
 
 internal class FakeHostCapture : HostCapture {
 
-    val requests = mutableListOf<Request>()
+    val requests = mutableListOf<CompletableDeferred<ImageBitmap?>>()
     private var captures = 0
 
-    val inFlight: List<Request> get() = requests.filter { it.isActive }
+    override suspend fun capture(): ImageBitmap? = CompletableDeferred<ImageBitmap?>().also { requests += it }.await()
 
-    override suspend fun capture(): ImageBitmap? {
-        val request = Request()
-        requests += request
-        return request.result.await()
-    }
+    fun landNext(): ImageBitmap = FakeImage("capture ${++captures}").also(::answer)
 
-    fun landNext(): ImageBitmap = FakeImage("capture ${++captures}").also { land(it) }
+    fun fail() = answer(null)
 
-    fun land(image: ImageBitmap?) {
-        val request = requests.lastOrNull { it.isActive } ?: error("no capture in flight, requests: $requests")
-        request.result.complete(image)
-    }
-
-    fun fail() = land(null)
-
-    class Request {
-        val result = CompletableDeferred<ImageBitmap?>()
-        val isActive: Boolean get() = !result.isCompleted
-
-        override fun toString(): String = "Request(completed=${result.isCompleted})"
+    private fun answer(image: ImageBitmap?) {
+        val request = requests.lastOrNull { !it.isCompleted } ?: error("no capture is waiting for an answer")
+        request.complete(image)
     }
 }
 
 internal class FakeSnapshotBlur : SnapshotBlur {
 
-    var isSuspending = false
-    val calls = mutableListOf<Float>()
-    private val pending = mutableListOf<CompletableDeferred<Unit>>()
-    var isReleased = false
+    val sigmas = mutableListOf<Float>()
+    var cacheClears = 0
         private set
+    var isSuspending = false
+    var runsOutOfMemory = false
+    private val pending = mutableListOf<CompletableDeferred<Unit>>()
 
     override suspend fun blur(capture: ImageBitmap, sigma: Float): ImageBitmap {
-        calls += sigma
+        sigmas += sigma
+        if (runsOutOfMemory) throw OutOfMemoryError()
         if (isSuspending) CompletableDeferred<Unit>().also { pending += it }.await()
         return BlurredImage(capture, sigma)
     }
@@ -88,23 +77,22 @@ internal class FakeSnapshotBlur : SnapshotBlur {
         waiting.forEach { it.complete(Unit) }
     }
 
-    override fun forgetCaptures() = Unit
-
-    override fun release() {
-        isReleased = true
+    override fun clearCache() {
+        cacheClears++
     }
+
+    override fun release() = Unit
 }
 
-internal class FakeSystemBlur(isEnabled: Boolean) : SystemBlurBehind {
+internal class FakeSystemBlur(var isEnabled: Boolean) : SystemBlurBehind {
 
-    var isEnabled: Boolean = isEnabled
-        private set
     var appliedRadiusPx: Int? = null
+        private set
+    var withdrawals = 0
         private set
     var isReleased = false
         private set
-    val requests = mutableListOf<Int>()
-    private var onEnabledChange: (() -> Unit)? = null
+    private var onEnabledChange: () -> Unit = {}
 
     val factory: SystemBlurFactory = { onEnabledChange ->
         this.onEnabledChange = onEnabledChange
@@ -112,26 +100,22 @@ internal class FakeSystemBlur(isEnabled: Boolean) : SystemBlurBehind {
     }
 
     override fun request(radiusPx: Int): Boolean {
-        requests += radiusPx
-        if (!isEnabled) return false
-
-        appliedRadiusPx = radiusPx
-        return true
+        if (isEnabled) appliedRadiusPx = radiusPx
+        return isEnabled
     }
 
     override fun withdraw() {
+        withdrawals++
         appliedRadiusPx = null
     }
 
     override fun release() {
         isReleased = true
-        onEnabledChange = null
-        withdraw()
     }
 
     fun switch(isEnabled: Boolean) {
         this.isEnabled = isEnabled
-        onEnabledChange?.invoke()
+        onEnabledChange()
     }
 }
 
@@ -156,7 +140,6 @@ internal class FakeHostWindowEvents : HostWindowEvents {
 
     override fun release() {
         isReleased = true
-        isFollowingDraws = false
     }
 
     fun resize() = onResize()

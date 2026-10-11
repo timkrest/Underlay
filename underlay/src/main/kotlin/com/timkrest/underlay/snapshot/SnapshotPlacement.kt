@@ -2,13 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.underlay.snapshot
 
-import android.view.View
-import android.view.Window
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
-import kotlin.math.roundToInt
 
 internal class SnapshotPlacement(val source: IntRect, val destination: IntRect) {
 
@@ -42,22 +38,6 @@ internal class SnapshotPlacement(val source: IntRect, val destination: IntRect) 
         private fun IntRect.inHostPixels(): IntRect = IntRect(
             offset = IntOffset(CaptureScale.hostPixels(left), CaptureScale.hostPixels(top)),
             size = IntSize(CaptureScale.hostPixels(width), CaptureScale.hostPixels(height)),
-        )
-    }
-}
-
-internal class HostOrigin {
-
-    private val viewOnScreen = IntArray(2)
-    private val hostOnScreen = IntArray(2)
-
-    fun of(view: View, host: Window, offsetInView: Offset = Offset.Zero): IntOffset {
-        view.getLocationOnScreen(viewOnScreen)
-        host.decorView.getLocationOnScreen(hostOnScreen)
-
-        return IntOffset(
-            x = viewOnScreen[0] - hostOnScreen[0] + offsetInView.x.roundToInt(),
-            y = viewOnScreen[1] - hostOnScreen[1] + offsetInView.y.roundToInt(),
         )
     }
 }

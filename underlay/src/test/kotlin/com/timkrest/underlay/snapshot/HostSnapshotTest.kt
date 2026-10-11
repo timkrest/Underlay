@@ -22,6 +22,7 @@ class HostSnapshotTest {
 
     private val host = FakeHostCapture()
     private val blur = FakeSnapshotBlur()
+    private val reports = mutableListOf<UnderlaySource>()
 
     @Test
     fun `nothing is drawn but the tint until the first capture is blurred`() = withSnapshot { snapshot ->
@@ -33,20 +34,19 @@ class HostSnapshotTest {
         val image = assertIs<BlurredImage>(snapshot.image)
         assertSame(captured, image.capture)
         assertEquals(SIGMA, image.sigma)
-        assertEquals(UnderlaySource.Snapshot, snapshot.source)
+        assertEquals(listOf(UnderlaySource.Snapshot), reports)
     }
 
     @Test
     fun `a first capture that fails falls back, and a later one recovers`() = withSnapshot { snapshot ->
         snapshot.capture(SIGMA)
         host.fail()
-        assertEquals(UnderlaySource.Fallback, snapshot.source)
 
         snapshot.capture(SIGMA)
         assertEquals(UnderlaySource.Fallback, snapshot.source, "what is on screen stays until a capture lands")
         host.landNext()
 
-        assertEquals(UnderlaySource.Snapshot, snapshot.source)
+        assertEquals(listOf(UnderlaySource.Fallback, UnderlaySource.Pending, UnderlaySource.Snapshot), reports)
     }
 
     @Test
@@ -72,7 +72,7 @@ class HostSnapshotTest {
         assertEquals(2, host.requests.size, "the waiting draws are captured together, once")
 
         host.landNext()
-        assertEquals(2, host.requests.size, "nothing was asked for after the second capture started")
+        assertEquals(2, host.requests.size)
     }
 
     @Test
@@ -91,7 +91,7 @@ class HostSnapshotTest {
         val stale = host.requests.single()
 
         snapshot.capture(SIGMA)
-        stale.result.complete(FakeImage("stale"))
+        stale.complete(FakeImage("stale"))
         val fresh = host.landNext()
 
         assertSame(fresh, assertIs<BlurredImage>(snapshot.image).capture)
@@ -102,12 +102,12 @@ class HostSnapshotTest {
         snapshot.capture(SIGMA)
         val captured = host.landNext()
 
+        snapshot.reblur(SIGMA)
         snapshot.reblur(OTHER_SIGMA)
 
-        val image = assertIs<BlurredImage>(snapshot.image)
-        assertSame(captured, image.capture)
-        assertEquals(OTHER_SIGMA, image.sigma)
-        assertEquals(1, host.requests.size, "the host was not read back again")
+        assertSame(captured, assertIs<BlurredImage>(snapshot.image).capture)
+        assertEquals(listOf(SIGMA, OTHER_SIGMA), blur.sigmas, "the same radius was blurred twice")
+        assertEquals(1, host.requests.size, "the host was read back again")
     }
 
     @Test
@@ -121,8 +121,21 @@ class HostSnapshotTest {
         blur.finishPending()
         blur.finishPending()
 
-        assertEquals(listOf(SIGMA, LAST_SIGMA), blur.calls, "the radius in between was never wanted")
+        assertEquals(listOf(SIGMA, LAST_SIGMA), blur.sigmas, "the radius in between was never wanted")
         assertEquals(LAST_SIGMA, assertIs<BlurredImage>(snapshot.image).sigma)
+    }
+
+    @Test
+    fun `a capture asked for during a reblur runs after it`() = withSnapshot { snapshot ->
+        snapshot.capture(SIGMA)
+        host.landNext()
+        blur.isSuspending = true
+
+        snapshot.reblur(OTHER_SIGMA)
+        snapshot.captureWhenIdle(OTHER_SIGMA)
+        blur.finishPending()
+
+        assertEquals(2, host.requests.size)
     }
 
     @Test
@@ -131,7 +144,25 @@ class HostSnapshotTest {
         val captured = host.landNext()
 
         assertSame(captured, snapshot.image)
-        assertTrue(blur.calls.isEmpty())
+        assertTrue(blur.sigmas.isEmpty())
+    }
+
+    @Test
+    fun `a blur that runs out of memory falls back, then keeps what is on screen`() = withSnapshot { snapshot ->
+        blur.runsOutOfMemory = true
+        snapshot.capture(SIGMA)
+        host.landNext()
+        assertEquals(UnderlaySource.Fallback, snapshot.source)
+
+        blur.runsOutOfMemory = false
+        snapshot.capture(SIGMA)
+        host.landNext()
+        val shown = snapshot.image
+
+        blur.runsOutOfMemory = true
+        snapshot.capture(SIGMA)
+        host.landNext()
+        assertSame(shown, snapshot.image)
     }
 
     @Test
@@ -142,6 +173,7 @@ class HostSnapshotTest {
 
         snapshot.discard()
         assertEquals(UnderlaySource.Pending, snapshot.source)
+        assertEquals(1, blur.cacheClears)
 
         snapshot.capture(SIGMA)
         host.landNext()
@@ -150,7 +182,9 @@ class HostSnapshotTest {
     }
 
     private fun withSnapshot(test: TestScope.(HostSnapshot) -> Unit) = runTest(UnconfinedTestDispatcher()) {
-        test(HostSnapshot(host, blur, backgroundScope, onChange = {}))
+        lateinit var snapshot: HostSnapshot
+        snapshot = HostSnapshot(host, blur, backgroundScope, onChange = { reports += snapshot.source })
+        test(snapshot)
     }
 
     private companion object {

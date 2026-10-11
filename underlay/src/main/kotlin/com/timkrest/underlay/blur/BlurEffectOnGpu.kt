@@ -21,19 +21,25 @@ internal class BlurEffectOnGpu(private val graphicsContext: GraphicsContext) : S
     private val onCpu = BoxBlurOnCpu()
 
     override suspend fun blur(capture: ImageBitmap, sigma: Float): ImageBitmap = try {
-        layer.record(RAW_PIXELS, LayoutDirection.Ltr, IntSize(capture.width, capture.height)) { drawImage(capture) }
-        layer.renderEffect = BlurEffect(sigma, sigma)
-        layer.toImageBitmap()
+        val radius = platformRadiusForSigma(sigma)
+        if (radius > 0f) blurOnLayer(capture, radius) else capture
     } catch (cancelled: CancellationException) {
         throw cancelled
     } catch (noRenderingContext: RuntimeException) {
         onCpu.blur(capture, sigma)
     }
 
-    override fun forgetCaptures() = onCpu.forgetCaptures()
+    override fun clearCache() = onCpu.clearCache()
 
     override fun release() {
         graphicsContext.releaseGraphicsLayer(layer)
         onCpu.release()
+    }
+
+    private suspend fun blurOnLayer(capture: ImageBitmap, radius: Float): ImageBitmap {
+        layer.record(RAW_PIXELS, LayoutDirection.Ltr, IntSize(capture.width, capture.height)) { drawImage(capture) }
+        layer.renderEffect = BlurEffect(radius, radius)
+
+        return layer.toImageBitmap()
     }
 }

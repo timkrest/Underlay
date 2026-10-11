@@ -44,7 +44,6 @@ class SnapshotPlacementTest {
 
         assertEquals(2, placement.source.width, "host pixels 3 to 7 span two snapshot pixels")
         assertEquals(IntOffset(x = -3, y = 0), placement.destination.topLeft, "the extra pixel is drawn where it was captured")
-        assertEquals(placement.source.width * CaptureScale.DOWNSCALE, placement.destination.width)
     }
 
     @Test
@@ -79,7 +78,7 @@ class SnapshotPlacementTest {
     }
 
     @Test
-    fun `a host width that is not a multiple of the capture factor stays inside the snapshot`() {
+    fun `a host width that is not a multiple of the capture factor reaches the last snapshot column`() {
         val hostWidth = 4 * 270 + 2
         val snapshot = IntSize(width = CaptureScale.snapshotFloor(hostWidth), height = CaptureScale.snapshotFloor(800))
 

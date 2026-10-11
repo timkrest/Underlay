@@ -22,7 +22,7 @@ internal class HostSnapshot(
         private set
 
     private var hasFailed = false
-    private var pristine: ImageBitmap? = null
+    private var unblurred: ImageBitmap? = null
     private var sigma = 0f
     private var work: Job? = null
     private var isRecaptureWanted = false
@@ -57,7 +57,7 @@ internal class HostSnapshot(
         this.sigma = sigma
         if (isBusy) return
 
-        val captured = pristine ?: return
+        val captured = unblurred ?: return
         work = scope.launch {
             blurUntilCaughtUp(captured)
             if (isRecaptureWanted) captureUntilCaughtUp()
@@ -66,9 +66,9 @@ internal class HostSnapshot(
 
     fun discard() {
         work?.cancel()
-        blur.forgetCaptures()
+        blur.clearCache()
         image = null
-        pristine = null
+        unblurred = null
         hasFailed = false
         isRecaptureWanted = false
     }
@@ -79,28 +79,35 @@ internal class HostSnapshot(
             val captured = captureOrNull()
             if (captured == null) {
                 hasFailed = true
-                onChange()
+                notifyChange()
             } else {
-                pristine = captured
+                unblurred = captured
                 blurUntilCaughtUp(captured)
             }
         } while (isRecaptureWanted)
     }
 
     private suspend fun blurUntilCaughtUp(captured: ImageBitmap) {
-        hasFailed = false
-        onChange()
+        if (hasFailed) {
+            hasFailed = false
+            notifyChange()
+        }
         do {
             val sigma = sigma
             val blurred = blurOrNull(captured, sigma)
             if (blurred == null) {
                 hasFailed = true
-                onChange()
+                notifyChange()
                 return
             }
             image = blurred
-            onChange()
+            notifyChange()
         } while (sigma != this.sigma)
+    }
+
+    private suspend fun notifyChange() {
+        onChange()
+        currentCoroutineContext().ensureActive()
     }
 
     private suspend fun captureOrNull(): ImageBitmap? {

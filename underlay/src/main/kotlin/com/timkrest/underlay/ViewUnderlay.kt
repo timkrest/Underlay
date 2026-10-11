@@ -1,5 +1,7 @@
 // Copyright 2026 Timofey Krestyanov
 // SPDX-License-Identifier: Apache-2.0
+@file:JvmName("ViewUnderlays")
+
 package com.timkrest.underlay
 
 import android.graphics.drawable.Drawable
@@ -22,14 +24,16 @@ import kotlinx.coroutines.cancel
  *
  * The View counterpart of [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay], for
  * overlays built from Views: an `android.app.Dialog`, a `DialogFragment`, a `BottomSheetDialog`, a
- * `PopupWindow`. It takes the same ladder of sources, see [UnderlaySource].
+ * `PopupWindow`. It picks its source the same way, see [UnderlaySource].
  *
  * The underlay takes the background slot of this view until [ViewUnderlay.remove] puts the previous
- * background back, keeping its outline and padding. Call it on a view of your own, such as the root of
- * the overlay's layout, not on one whose background something else manages, like a `decorView` or
- * the sheet of a `BottomSheetDialog`. Calling it again on the same view replaces the underlay.
+ * background back. It reports the previous background's outline and padding, so set
+ * `clipToOutline` for rounded corners. Call it on a view of your own, such as the root of the
+ * overlay's layout, not on one whose background something else manages, like a `decorView` or the
+ * sheet of a `BottomSheetDialog`. Calling it again on the same view replaces the underlay, and setting
+ * another background on the view removes it.
  *
- * @param blurRadius blur strength in pixels, read as the standard deviation of a Gaussian.
+ * @param blurRadius blur radius in pixels, the same value `Modifier.blur` and `blurBehindRadius` take.
  * @param tint drawn over the blurred content, usually a translucent black or white.
  * @param fallback solid color drawn when no blur is available at all.
  * @param liveSnapshot capture the host window again every time it draws. See
@@ -38,12 +42,13 @@ import kotlinx.coroutines.cancel
  *   function has returned.
  */
 @MainThread
+@JvmOverloads
 public fun View.blurredUnderlay(
     @Px blurRadius: Float,
     @ColorInt tint: Int,
     @ColorInt fallback: Int,
     liveSnapshot: Boolean = false,
-    onSourceChange: ((UnderlaySource) -> Unit)? = null,
+    onSourceChange: ViewUnderlay.OnSourceChangeListener? = null,
 ): ViewUnderlay {
     (getTag(R.id.underlay_view_underlay) as? ViewUnderlay)?.remove()
 
@@ -61,8 +66,13 @@ public class ViewUnderlay internal constructor(
     tint: Int,
     fallback: Int,
     liveSnapshot: Boolean,
-    private val onSourceChange: ((UnderlaySource) -> Unit)?,
+    onSourceChange: OnSourceChangeListener?,
 ) {
+
+    /** Called whenever the active [UnderlaySource] changes. */
+    public fun interface OnSourceChangeListener {
+        public fun onSourceChange(source: UnderlaySource)
+    }
 
     private class Binding(val scope: CoroutineScope, val controller: UnderlayController)
 
@@ -77,12 +87,15 @@ public class ViewUnderlay internal constructor(
 
         override fun onViewDetachedFromWindow(detached: View) = unbind()
     }
-    private val preDrawListener = ViewTreeObserver.OnPreDrawListener {
-        drawable.invalidateIfMoved()
+    private val beforeDraw = ViewTreeObserver.OnPreDrawListener {
+        when {
+            view.background !== installedBackground -> remove()
+            binding?.controller?.needsRedrawBeforeDraw(view) == true -> drawable.invalidateSelf()
+        }
         true
     }
 
-    /** Blur strength in pixels, read as the standard deviation of a Gaussian. */
+    /** Blur radius in pixels, the same value `Modifier.blur` and `blurBehindRadius` take. */
     @get:Px
     public var blurRadius: Float = blurRadius
         set(@Px value) {
@@ -108,14 +121,17 @@ public class ViewUnderlay internal constructor(
 
     /**
      * Capture the host window again every time it draws, so the snapshot follows content that moves
-     * underneath. One capture is in flight at a time, so the backdrop trails the host by a couple of
-     * frames and costs a `PixelCopy` and a blur per host frame. The system blur ignores it.
+     * underneath a couple of frames behind. It costs a capture and a blur per host frame; below API 26
+     * the capture redraws the host in software. The system blur ignores it.
      */
     public var liveSnapshot: Boolean = liveSnapshot
         set(value) {
             field = value
             binding?.controller?.setLive(value)
         }
+
+    /** Called whenever the active [UnderlaySource] changes. */
+    public var onSourceChange: OnSourceChangeListener? = onSourceChange
 
     /** Where the underlay comes from. Null while the view is not attached to a window, or removed. */
     public var source: UnderlaySource? = null
@@ -160,7 +176,7 @@ public class ViewUnderlay internal constructor(
         )
         binding = Binding(scope, controller)
         drawable.controller = controller
-        view.viewTreeObserver.addOnPreDrawListener(preDrawListener)
+        view.viewTreeObserver.addOnPreDrawListener(beforeDraw)
         controller.bind(view, view.context.findActivity(), BlurRadius.ofPx(blurRadius), liveSnapshot)
     }
 
@@ -168,7 +184,7 @@ public class ViewUnderlay internal constructor(
         val binding = binding ?: return
         this.binding = null
 
-        view.viewTreeObserver.removeOnPreDrawListener(preDrawListener)
+        view.viewTreeObserver.removeOnPreDrawListener(beforeDraw)
         drawable.controller = null
         binding.controller.release()
         binding.scope.cancel()
@@ -177,6 +193,6 @@ public class ViewUnderlay internal constructor(
 
     private fun onSourceReported(source: UnderlaySource) {
         this.source = source
-        onSourceChange?.invoke(source)
+        onSourceChange?.onSourceChange(source)
     }
 }

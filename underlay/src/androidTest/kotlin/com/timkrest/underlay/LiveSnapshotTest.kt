@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,15 +28,15 @@ class LiveSnapshotTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
+    @get:Rule
+    val systemBlur = SystemBlurRule()
+
     private var hostColor by mutableStateOf(Color.Red)
     private var isOverlayOpen by mutableStateOf(false)
     private val reported = CopyOnWriteArrayList<UnderlaySource>()
 
     @Volatile
     private var backdropOnScreen: Offset? = null
-
-    @After
-    fun letTheSystemBlurAgain() = compose.restoreTheSystemBlur()
 
     @Test
     fun aLiveSnapshotUnderAPopupFollowsTheHostWithoutARefresh() = assertTheSnapshotFollowsTheHost(inPopup)
@@ -46,7 +45,7 @@ class LiveSnapshotTest {
     fun aLiveSnapshotUnderADialogFollowsTheHostWithoutARefresh() = assertTheSnapshotFollowsTheHost(inUndimmedDialog)
 
     private fun assertTheSnapshotFollowsTheHost(overlay: Overlay) {
-        compose.takeTheSystemBlurOutOfTheLadder()
+        systemBlur.switchOff()
         compose.setContent {
             Box(Modifier.fillMaxSize().background(hostColor))
             if (isOverlayOpen) overlay { Backdrop() }
@@ -75,6 +74,7 @@ class LiveSnapshotTest {
             Modifier
                 .size(BACKDROP_SIZE)
                 .reportCenterOnScreen { backdropOnScreen = it }
+                .background(BEHIND_THE_BACKDROP)
                 .blurredUnderlay(
                     blurRadius = 0.dp,
                     tint = TINT,
@@ -83,10 +83,5 @@ class LiveSnapshotTest {
                     onSourceChange = { reported += it },
                 ),
         )
-    }
-
-    private companion object {
-        val TINT = Color.Green.copy(alpha = 0.5f)
-        val BACKDROP_SIZE = 120.dp
     }
 }

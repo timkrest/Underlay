@@ -73,6 +73,16 @@ class OverlayWindowTest {
         }
     }
 
+    @Test
+    fun aRootViewOutsideTheWindowManagerRefusesTheFlagAndKeepsNone() {
+        val windowManager = assertNotNull(compose.activity.getSystemService<WindowManager>(), "no window manager")
+        val detached = View(compose.activity).apply { layoutParams = WindowManager.LayoutParams() }
+        val overlay = OverlayWindow.OfRootView(detached, windowManager)
+
+        assertFalse(compose.runOnUiThread { overlay.applyBlurBehind(RADIUS_PX) })
+        assertFalse(overlay.hasBlurBehind())
+    }
+
     @RequiresApi(Build.VERSION_CODES.S)
     private fun assertBlurBehindTravels(overlay: OverlayWindow, attributes: () -> WindowManager.LayoutParams) {
         assertTrue(compose.runOnUiThread { overlay.applyBlurBehind(RADIUS_PX) }, "the window refused the flag")

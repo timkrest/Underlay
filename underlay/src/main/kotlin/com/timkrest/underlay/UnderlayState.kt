@@ -15,8 +15,8 @@ import androidx.compose.runtime.setValue
  * snapshot for content that moves underneath while the overlay stays open.
  *
  * Pass it to [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay]. Call [refresh]
- * whenever the host window has changed; only [UnderlaySource.Snapshot] reads it, the system blur is
- * live and needs no refreshing.
+ * whenever the host window has changed without resizing; resizes and configuration changes are
+ * picked up on their own. Only [UnderlaySource.Snapshot] reads it, the system blur is live.
  */
 @Stable
 public class UnderlayState {
@@ -32,8 +32,8 @@ public class UnderlayState {
         internal set
 
     /**
-     * Captures the host window again, from the main thread. The snapshot on screen stays until the
-     * new one is ready.
+     * Captures the host window again on a following frame. The snapshot on screen stays until the new
+     * one is ready.
      */
     public fun refresh() {
         refreshes++

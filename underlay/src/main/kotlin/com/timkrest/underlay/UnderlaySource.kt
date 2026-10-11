@@ -5,8 +5,9 @@ package com.timkrest.underlay
 /**
  * Where the underlay currently comes from.
  *
- * Reported through the `onSourceChange` callback of
- * [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay] and read as [UnderlayState.source].
+ * Reported through the `onSourceChange` callbacks of both `blurredUnderlay` functions, and read as
+ * [UnderlayState.source] or [ViewUnderlay.source]. Later versions may add sources, so a `when` over
+ * it should have an `else` branch.
  */
 public enum class UnderlaySource {
 
@@ -26,8 +27,9 @@ public enum class UnderlaySource {
 
     /**
      * A snapshot is being captured and blurred. Only the tint is drawn, so the host window shows
-     * through clear until [Snapshot] takes over instead of the overlay flashing [Fallback]. Always
-     * followed by [Snapshot], or by [Fallback] if the capture keeps failing.
+     * through clear until [Snapshot] takes over instead of the overlay flashing [Fallback]. Followed by
+     * [Snapshot], by [Fallback] if the capture fails, or by [SystemBlur] if the system turns
+     * cross-window blur back on.
      */
     Pending,
 

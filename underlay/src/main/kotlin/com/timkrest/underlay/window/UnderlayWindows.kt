@@ -11,6 +11,11 @@ import androidx.core.content.res.use
 
 internal class UnderlayWindows(val overlay: OverlayWindow?, val host: Window?) {
 
+    fun mayShowHost(): Boolean {
+        val host = host ?: return false
+        return !host.isSecure || overlay?.isSecure == true
+    }
+
     companion object {
 
         fun resolve(view: View, activity: Activity?, windowManager: WindowManager?): UnderlayWindows {

@@ -11,17 +11,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.underlay.matches
 import com.timkrest.underlay.snapshot.CaptureScale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import android.graphics.Color as PixelColor
 
 @RunWith(AndroidJUnit4::class)
 class WindowCaptureTest {
@@ -33,12 +32,10 @@ class WindowCaptureTest {
     fun theHostWindowIsCapturedWithTheColorOnScreen() {
         showFullScreen(Color.Red)
 
-        val center = captureHostWindow().centerPixel()
+        val center = Color(captureHostWindow().centerPixel())
 
-        assertChannel(expected = 255, actual = PixelColor.red(center), name = "red")
-        assertChannel(expected = 0, actual = PixelColor.green(center), name = "green")
-        assertChannel(expected = 0, actual = PixelColor.blue(center), name = "blue")
-        assertEquals(255, PixelColor.alpha(center), "an opaque window must capture opaque")
+        assertTrue(center.matches(Color.Red), "captured $center")
+        assertEquals(1f, center.alpha, "an opaque window must capture opaque")
     }
 
     @Test
@@ -77,12 +74,4 @@ class WindowCaptureTest {
     }
 
     private fun Bitmap.centerPixel(): Int = getPixel(width / 2, height / 2)
-
-    private fun assertChannel(expected: Int, actual: Int, name: String) {
-        assertTrue(abs(expected - actual) <= CHANNEL_TOLERANCE, "$name channel: expected ~$expected, was $actual")
-    }
-
-    private companion object {
-        const val CHANNEL_TOLERANCE = 8
-    }
 }

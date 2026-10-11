@@ -10,7 +10,7 @@ internal interface SnapshotBlur {
 
     suspend fun blur(capture: ImageBitmap, sigma: Float): ImageBitmap
 
-    fun forgetCaptures()
+    fun clearCache()
 
     fun release()
 

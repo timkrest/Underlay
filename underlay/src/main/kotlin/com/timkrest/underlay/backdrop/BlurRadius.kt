@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.underlay.backdrop
 
+import com.timkrest.underlay.blur.sigmaForPlatformRadius
 import com.timkrest.underlay.snapshot.CaptureScale
 import kotlin.math.roundToInt
 
@@ -10,7 +11,7 @@ internal value class BlurRadius private constructor(private val px: Float) {
 
     val windowPx: Int get() = px.roundToInt()
 
-    val snapshotSigma: Float get() = CaptureScale.snapshotSigma(px)
+    val snapshotSigma: Float get() = CaptureScale.snapshotSigma(sigmaForPlatformRadius(px))
 
     companion object {
 

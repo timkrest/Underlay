@@ -28,7 +28,6 @@ private class CrossWindowBlur(
 
     private val listener = Consumer<Boolean> { if (!isReleased) onEnabledChange() }
     private var isReleased = false
-    private var appliedRadiusPx: Int? = null
 
     init {
         windowManager.addCrossWindowBlurEnabledListener(listener)
@@ -36,18 +35,12 @@ private class CrossWindowBlur(
 
     override fun request(radiusPx: Int): Boolean {
         if (!windowManager.isCrossWindowBlurEnabled) return false
-        if (appliedRadiusPx == radiusPx) return true
-        if (!overlay.applyBlurBehind(radiusPx)) return false
 
-        appliedRadiusPx = radiusPx
-        return true
+        return overlay.hasBlurBehind(radiusPx) || overlay.applyBlurBehind(radiusPx)
     }
 
     override fun withdraw() {
-        if (appliedRadiusPx == null) return
-
-        overlay.clearBlurBehind()
-        appliedRadiusPx = null
+        if (overlay.hasBlurBehind()) overlay.clearBlurBehind()
     }
 
     override fun release() {

@@ -4,7 +4,6 @@ package com.timkrest.underlay.window
 
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -66,7 +65,7 @@ class UnderlayWindowsTest {
     @Composable
     private fun underlayWindows(): UnderlayWindows = UnderlayWindows.resolve(
         view = LocalView.current,
-        activity = LocalActivity.current,
+        activity = LocalContext.current.findActivity(),
         windowManager = LocalContext.current.getSystemService<WindowManager>(),
     )
 }
