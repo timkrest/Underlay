@@ -29,15 +29,13 @@ Dialog(onDismissRequest = ::dismiss) {
 
 ## Why
 
-A `Dialog` is a separate window. `Modifier.blur()` inside it blurs the dialog, not the activity
-behind it. Libraries like haze can carry a Compose subtree you mark across that boundary; Underlay is
-for when the screen behind is Views or code you don't own, or the overlay is a View `Dialog` or a
-`PopupWindow`. It works on windows:
-`FLAG_BLUR_BEHIND` on API 31+, a `PixelCopy` snapshot below that. Platform issue:
-[Support window blur in compose dialogs](https://issuetracker.google.com/issues/296272625).
+A `Dialog` is a separate window, so `Modifier.blur()` inside it can't reach the activity behind
+([platform issue](https://issuetracker.google.com/issues/296272625)). Underlay blurs that window:
+`FLAG_BLUR_BEHIND` on API 31+, a blurred snapshot otherwise. Unlike haze, it needs no marked Compose
+subtree: the screen behind can be Views or code you don't own, and the overlay a View `Dialog` or a
+`PopupWindow`.
 
-Background and trade-offs: [the article](docs/article-window-boundary.md) and
-[how it works](docs/how-it-works.md).
+Details: [how it works](docs/how-it-works.md), [the article](docs/article-window-boundary.md).
 
 ## Install
 
@@ -58,8 +56,8 @@ dependencies {
 | `Pending` | A capture is in flight | The tint only |
 | `Fallback` | No own window, no host window, or the capture failed | The `fallback` color |
 
-Battery saver switches cross-window blur off; an open overlay then falls through to `Snapshot`.
-Some devices never turn it on, Samsung Galaxy phones among them; there every overlay uses `Snapshot`.
+Battery saver turns cross-window blur off, moving open overlays to `Snapshot`. Samsung Galaxy phones
+and some other devices lack it and always use `Snapshot`.
 
 ## State and refresh
 
@@ -80,9 +78,9 @@ Box(
 }
 ```
 
-`Snapshot` is taken when the overlay opens, when the host resizes, on a configuration change (Compose
-only; with Views call `refresh()`) and on `refresh()`. `liveSnapshot = true` captures the host again every time it draws, a couple of frames
-behind, at a `PixelCopy` and a blur per host frame.
+`Snapshot` is retaken when the host resizes, on `refresh()` and, in Compose, on a configuration
+change (with Views, call `refresh()`). `liveSnapshot = true` retakes it on every host frame, a
+couple of frames behind, for a capture and a blur per frame.
 
 ## Views
 
@@ -100,21 +98,29 @@ class FrostedDialogFragment : DialogFragment(R.layout.frosted_dialog) {
 }
 ```
 
-The underlay becomes the view's background, with the radius in pixels. It returns a `ViewUnderlay`
-with `source`, `refresh()`, setters and `remove()`, which puts the previous background back. Call it
-on a view of your own, not on a `decorView` or the sheet of a `BottomSheetDialog`.
+The underlay becomes the view's background, radius in pixels. `ViewUnderlay` exposes `source`,
+`refresh()`, setters and `remove()`, which restores the old background. Call it on your own view,
+not a `decorView` or a `BottomSheetDialog` sheet.
+
+## Limits
+
+- Apply the modifier once per window, to a composable that fills it: `SystemBlur` covers the whole
+  window, `Snapshot` only the composable.
+- The snapshot is always of the activity window, even under a dialog opened over another dialog.
+- A translucent activity has no host window: without `SystemBlur` it draws `fallback`. An overlay
+  inside the activity window always does; use an in-window blur library there.
+- A `FLAG_SECURE` host is captured only into a secure overlay window; otherwise `Snapshot` gives way
+  to `Fallback`. Compose `Dialog` and `Popup` inherit the flag by default.
 
 ## Compatibility
 
-The public API is recorded in [`underlay/api/underlay.api`](underlay/api/underlay.api) and checked on
-every build. A patch release never breaks anything; until 1.0.0 a minor release may, and the
-changelog says so. Kotlin mangles signatures that take a `Dp` or a `Color`, so a new parameter can
-need a rebuild even when your code still compiles.
+Every build checks the public API against [`underlay/api/underlay.api`](underlay/api/underlay.api).
+Patch releases don't break it; before 1.0.0 a minor release may, and the changelog says so. A new
+parameter on a function taking `Dp` or `Color` changes its mangled JVM name and needs a rebuild.
 
 ## Sample
 
-One overlay per window kind over a grid of hardware bitmaps, with the active source and a radius
-slider:
+One overlay per window kind, with the active source and a radius slider:
 
 ```bash
 ./gradlew :sample:installDebug
