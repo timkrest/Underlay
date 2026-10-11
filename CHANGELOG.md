@@ -29,7 +29,8 @@ version.
 
 ### Fixed
 
-- A hardware snapshot drawn on a software canvas threw on every frame. It is skipped there.
+- A hardware snapshot drawn on a software canvas, such as a view with `LAYER_TYPE_SOFTWARE`, threw on
+  every frame. It is copied into a software bitmap there.
 - A Compose overlay whose window moved, such as a popup following its anchor, kept the snapshot in
   the old place.
 - A Compose `Popup` that updated its properties lost the system blur while still reporting it.
@@ -37,7 +38,8 @@ version.
   radius now applies after the running blur.
 - A cancelled blur on the CPU ran to the end before the next one could start.
 - Removing the underlay switched off `FLAG_BLUR_BEHIND` and `blurBehindRadius` that the overlay
-  window had set itself. It now puts them back as they were.
+  window had set itself. It now puts back what the window had when the underlay turned the flag on,
+  and leaves the window alone if it never turned the flag on.
 
 ## [0.4.0] - 2026-09-12
 

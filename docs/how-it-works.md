@@ -28,7 +28,8 @@ A translucent activity has no host window either, so it drops from `SystemBlur` 
 for a Compose `Dialog`, through `WindowManager.updateViewLayout` for everything else. The system blurs everything behind
 the window, live, at no cost to the app.
 
-Cross-window blur can be off: battery saver turns it off, and some vendors never turn it on.
+Cross-window blur can be off: battery saver turns it off, and some vendors never turn it on: Samsung
+Galaxy phones leave `ro.surface_flinger.supports_background_blur` unset.
 Underlay listens through `WindowManager.addCrossWindowBlurEnabledListener`, drops the flag and falls
 through to the snapshot. A window that refuses the flag falls through the same way.
 

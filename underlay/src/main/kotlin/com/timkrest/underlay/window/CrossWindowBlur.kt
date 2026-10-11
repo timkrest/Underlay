@@ -27,7 +27,7 @@ private class CrossWindowBlur(
 ) : SystemBlurBehind {
 
     private val listener = Consumer<Boolean> { if (!isReleased) onEnabledChange() }
-    private val original = overlay.blurBehind ?: BlurBehind.Off
+    private var original: BlurBehind? = null
     private var isReleased = false
 
     init {
@@ -38,10 +38,17 @@ private class CrossWindowBlur(
         if (!windowManager.isCrossWindowBlurEnabled) return false
 
         val wanted = BlurBehind.on(radiusPx)
-        return overlay.blurBehind == wanted || overlay.setBlurBehind(wanted)
+        val current = overlay.blurBehind ?: BlurBehind.Off
+        if (current == wanted) return true
+        if (!overlay.setBlurBehind(wanted)) return false
+
+        if (original == null) original = current
+        return true
     }
 
     override fun withdraw() {
+        val original = original ?: return
+        this.original = null
         if (overlay.blurBehind != original) overlay.setBlurBehind(original)
     }
 

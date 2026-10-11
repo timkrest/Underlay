@@ -59,6 +59,7 @@ dependencies {
 | `Fallback` | No own window, no host window, or the capture failed | The `fallback` color |
 
 Battery saver switches cross-window blur off; an open overlay then falls through to `Snapshot`.
+Some devices never turn it on, Samsung Galaxy phones among them; there every overlay uses `Snapshot`.
 
 ## State and refresh
 

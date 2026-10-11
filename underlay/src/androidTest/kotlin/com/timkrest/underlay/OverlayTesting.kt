@@ -67,34 +67,37 @@ internal fun isCrossWindowBlurEnabled(): Boolean {
 
 class SystemBlurRule : ExternalResource() {
 
-    override fun before() = restore()
+    private var original: String? = null
 
-    override fun after() = restore()
+    override fun after() {
+        val original = original ?: return
+        this.original = null
+        shell(if (original == UNSET) "settings delete global $SETTING" else "settings put global $SETTING $original")
+    }
 
     fun switchOff() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
 
-        shell("settings put global disable_window_blurs 1")
+        if (original == null) original = shell("settings get global $SETTING").trim().ifEmpty { UNSET }
+        shell("settings put global $SETTING 1")
         awaitSetting { !isCrossWindowBlurEnabled() }
-    }
-
-    private fun restore() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) shell("settings delete global disable_window_blurs")
     }
 
     private fun awaitSetting(condition: () -> Boolean) {
         val deadline = SystemClock.uptimeMillis() + TIMEOUT_MILLIS
         while (!condition()) {
-            check(SystemClock.uptimeMillis() < deadline) { "the system never applied disable_window_blurs" }
+            check(SystemClock.uptimeMillis() < deadline) { "the system never applied $SETTING" }
             SystemClock.sleep(POLL_MILLIS)
         }
     }
 }
 
 private const val POLL_MILLIS = 50L
+private const val SETTING = "disable_window_blurs"
+private const val UNSET = "null"
 
-private fun shell(command: String) {
+private fun shell(command: String): String {
     val output = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)
 
-    output.use { descriptor -> FileInputStream(descriptor.fileDescriptor).use { it.readBytes() } }
+    return output.use { descriptor -> FileInputStream(descriptor.fileDescriptor).use { it.readBytes().decodeToString() } }
 }
