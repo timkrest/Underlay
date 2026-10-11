@@ -7,9 +7,7 @@
 
 Blurred backdrop for dialogs and overlays that live in **their own window**, down to API 23.
 
-| `Snapshot` behind a `Dialog` | `Fallback` in a translucent activity |
-|---|---|
-| <img src="docs/snapshot.png" width="300" alt="A dialog over a grid of tiles, its backdrop blurred from a snapshot of the activity window"> | <img src="docs/fallback.png" width="300" alt="A translucent activity drawing the solid fallback color, with no host window to capture"> |
+<img src="docs/demo.gif" width="300" alt="The sample on a Galaxy S25: a dialog, a popup, a bottom sheet and a View dialog over a blurred feed, then a translucent activity and an in-window overlay drawing the fallback">
 
 ```kotlin
 Dialog(onDismissRequest = ::dismiss) {

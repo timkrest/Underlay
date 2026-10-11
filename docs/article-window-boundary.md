@@ -192,7 +192,7 @@ view.blurredUnderlay(
 
 <img src="snapshot.png"
      width="300"
-     alt="A dialog over tiles, its backdrop blurred from a snapshot of the activity window">
+     alt="A dialog over a feed of cards, its backdrop blurred from a snapshot of the activity window">
 
 The modifier figures out which window it was called from and whether there's a host window
 underneath, then takes the best thing available. Step one from above is `SystemBlur`, step two is

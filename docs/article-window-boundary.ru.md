@@ -188,7 +188,7 @@ view.blurredUnderlay(
 
 `minSdk 23`, Apache 2.0, [github.com/timkrest/Underlay](https://github.com/timkrest/Underlay).
 
-<img src="snapshot.png" width="300" alt="Диалог над плитками, фон размыт из снимка окна активити">
+<img src="snapshot.png" width="300" alt="Диалог над лентой карточек, фон размыт из снимка окна активити">
 
 Модификатор сам разбирается, из какого окна его вызвали и есть ли под ним окно-хост, и берёт
 лучшее из доступного. Первая ступень выше — это `SystemBlur`, вторая — `Snapshot`:
