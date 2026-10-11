@@ -3,6 +3,7 @@
 package com.timkrest.underlay.sample
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.timkrest.underlay.UnderlaySource
+
+private const val FILL_ALPHA = 0.18f
+private const val BORDER_ALPHA = 0.35f
+private val IDLE_COLOR = Color(0xFF9AA3AF)
 
 @Composable
 internal fun UnderlaySourceBadge(
@@ -27,40 +33,45 @@ internal fun UnderlaySourceBadge(
     modifier: Modifier = Modifier,
     placeholder: String = "Resolving",
 ) {
+    val color = source.indicatorColor()
+
     Row(
         modifier = modifier
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.10f))
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .background(color.copy(alpha = FILL_ALPHA))
+            .border(1.dp, color.copy(alpha = BORDER_ALPHA), CircleShape)
+            .padding(start = 10.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
-                .size(9.dp)
+                .size(8.dp)
                 .clip(CircleShape)
-                .background(source.indicatorColor()),
+                .background(color),
         )
         Text(
             text = source?.description() ?: placeholder,
             color = Color.White,
             style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
         )
     }
 }
 
-private fun UnderlaySource.description(): String = when (this) {
+internal fun UnderlaySource.description(): String = when (this) {
     UnderlaySource.SystemBlur -> "System blur"
     UnderlaySource.Snapshot -> "Snapshot"
     UnderlaySource.Pending -> "Capturing"
     UnderlaySource.Fallback -> "Fallback"
 }
 
-private fun UnderlaySource?.indicatorColor(): Color = when (this) {
+internal fun UnderlaySource?.indicatorColor(): Color = when (this) {
     UnderlaySource.SystemBlur -> Color(0xFF7BE495)
     UnderlaySource.Snapshot -> Color(0xFFFFD166)
     UnderlaySource.Fallback -> Color(0xFFFF8A80)
-    UnderlaySource.Pending, null -> Color(0xFF9AA3AF)
+    UnderlaySource.Pending, null -> IDLE_COLOR
 }
 
 @Preview

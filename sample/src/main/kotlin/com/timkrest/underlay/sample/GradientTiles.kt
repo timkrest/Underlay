@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.os.Build
 import androidx.compose.runtime.Composable
@@ -21,12 +22,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 private const val TILE_SIZE = 512
-private const val CIRCLES_PER_TILE = 5
-private const val CIRCLE_ALPHA = 46
-private const val TILE_STRIDE = 37
-private const val CIRCLE_STRIDE = 61
+private const val BLOBS_PER_TILE = 3
+private const val BLOB_STRIDE = 173
+private const val BLOB_ALPHA = 0.8f
+private const val HIGHLIGHT_ALPHA = 0.35f
+private const val RING_STROKE = 6f
+private const val RING_ALPHA = 0.55f
+private const val RINGS_PER_TILE = 2
 
-private val GRADIENTS = listOf(
+private val PALETTE = listOf(
     Color(0xFFFF5F6D) to Color(0xFFFFC371),
     Color(0xFF4776E6) to Color(0xFF8E54E9),
     Color(0xFF11998E) to Color(0xFF38EF7D),
@@ -35,10 +39,14 @@ private val GRADIENTS = listOf(
     Color(0xFF00C9FF) to Color(0xFF92FE9D),
     Color(0xFFEE0979) to Color(0xFFFF6A00),
     Color(0xFF614385) to Color(0xFF516395),
+    Color(0xFF0F2027) to Color(0xFF2C5364),
+    Color(0xFFFF9A9E) to Color(0xFFFAD0C4),
+    Color(0xFFA18CD1) to Color(0xFFFBC2EB),
+    Color(0xFF43E97B) to Color(0xFF38F9D7),
 )
 
 @Immutable
-internal class GradientTiles(val images: List<ImageBitmap>, val areHardware: Boolean)
+internal class GradientTiles(val images: List<ImageBitmap>)
 
 @Composable
 internal fun rememberGradientTiles(): GradientTiles? {
@@ -50,20 +58,18 @@ internal fun rememberGradientTiles(): GradientTiles? {
 }
 
 internal fun gradientTiles(): GradientTiles {
-    val bitmaps = GRADIENTS.mapIndexed { index, (start, end) -> gradientTile(index, start, end) }
+    val bitmaps = PALETTE.indices.map(::gradientTile)
 
-    return GradientTiles(
-        images = bitmaps.map { it.asImageBitmap() },
-        areHardware = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            bitmaps.all { it.config == Bitmap.Config.HARDWARE },
-    )
+    return GradientTiles(images = bitmaps.map { it.asImageBitmap() })
 }
 
-private fun gradientTile(index: Int, start: Color, end: Color): Bitmap {
+private fun gradientTile(index: Int): Bitmap {
+    val (start, end) = PALETTE[index]
     val software = createBitmap(TILE_SIZE, TILE_SIZE)
     val canvas = Canvas(software)
     canvas.drawPaint(gradientPaint(start, end))
-    drawCircles(canvas, seed = index)
+    drawBlobs(canvas, index)
+    drawRings(canvas, index)
 
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return software
     return software.copy(Bitmap.Config.HARDWARE, false)?.also { software.recycle() } ?: software
@@ -81,19 +87,38 @@ private fun gradientPaint(start: Color, end: Color) = Paint().apply {
     )
 }
 
-private fun drawCircles(canvas: Canvas, seed: Int) {
+private fun drawBlobs(canvas: Canvas, index: Int) {
+    val size = TILE_SIZE.toFloat()
+    repeat(BLOBS_PER_TILE) { step ->
+        val (accent, _) = PALETTE[(index + step + 1) % PALETTE.size]
+        val color = if (step == 0) Color.White.copy(alpha = HIGHLIGHT_ALPHA) else accent.copy(alpha = BLOB_ALPHA)
+        val x = (index * BLOB_STRIDE + step * BLOB_STRIDE * 2) % TILE_SIZE
+        val y = (index * BLOB_STRIDE * 3 + step * BLOB_STRIDE) % TILE_SIZE
+        val radius = size / (1.6f + step)
+        val paint = Paint().apply {
+            shader = RadialGradient(
+                x.toFloat(),
+                y.toFloat(),
+                radius,
+                color.toArgb(),
+                Color.Transparent.toArgb(),
+                Shader.TileMode.CLAMP,
+            )
+        }
+        canvas.drawCircle(x.toFloat(), y.toFloat(), radius, paint)
+    }
+}
+
+private fun drawRings(canvas: Canvas, index: Int) {
     val paint = Paint().apply {
         isAntiAlias = true
-        color = Color.White.toArgb()
-        alpha = CIRCLE_ALPHA
+        style = Paint.Style.STROKE
+        strokeWidth = RING_STROKE
+        color = Color.White.copy(alpha = RING_ALPHA).toArgb()
     }
-    repeat(CIRCLES_PER_TILE) { step ->
-        val position = (seed * TILE_STRIDE + step * CIRCLE_STRIDE) % TILE_SIZE
-        canvas.drawCircle(
-            position.toFloat(),
-            (TILE_SIZE - position).toFloat(),
-            TILE_SIZE / (3f + step),
-            paint,
-        )
+    repeat(RINGS_PER_TILE) { step ->
+        val x = (index * BLOB_STRIDE * 2 + step * BLOB_STRIDE) % TILE_SIZE
+        val y = (index * BLOB_STRIDE + step * BLOB_STRIDE * 2) % TILE_SIZE
+        canvas.drawCircle(x.toFloat(), y.toFloat(), TILE_SIZE / (4f + step * 2), paint)
     }
 }

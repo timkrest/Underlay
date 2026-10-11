@@ -13,9 +13,13 @@
         <item name="android:windowAnimationStyle">@null</item>
     </style>
 
+    <!-- A dialog window that spans the screen, so the underlay on its root covers everything behind. -->
     <style name="Theme.Sample.ViewDialog" parent="android:Theme.Material.Dialog.NoActionBar">
+        <item name="android:windowIsFloating">false</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
 </resources>

@@ -8,14 +8,21 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,69 +32,145 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.timkrest.underlay.UnderlaySource
-import com.timkrest.underlay.UnderlayState
 import com.timkrest.underlay.rememberUnderlayState
 import kotlinx.coroutines.launch
 
 private val SAME_WINDOW_SCRIM = Color.Black.copy(alpha = 0.35f)
 
+/** Hosts the overlay kinds that live inside this activity; [OverlayKind.TranslucentActivity] is its own. */
 @Composable
 internal fun OverlayHost(
     kind: OverlayKind?,
+    source: UnderlaySource?,
     blurRadius: Dp,
     liveSnapshot: Boolean,
-    underlayState: UnderlayState,
-    onViewSourceChange: (UnderlaySource?) -> Unit,
-    onRefresh: () -> Unit,
+    onSourceChange: (UnderlaySource?) -> Unit,
+    onShuffle: () -> Unit,
     onBlurRadiusChange: (Dp) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    if (kind == null || kind == OverlayKind.TranslucentActivity) return
+
+    key(kind) {
+        HostedOverlay(
+            kind = kind,
+            source = source,
+            blurRadius = blurRadius,
+            liveSnapshot = liveSnapshot,
+            onSourceChange = onSourceChange,
+            onShuffle = onShuffle,
+            onBlurRadiusChange = onBlurRadiusChange,
+            onDismiss = onDismiss,
+        )
+    }
+}
+
+@Composable
+private fun HostedOverlay(
+    kind: OverlayKind,
+    source: UnderlaySource?,
+    blurRadius: Dp,
+    liveSnapshot: Boolean,
+    onSourceChange: (UnderlaySource?) -> Unit,
+    onShuffle: () -> Unit,
+    onBlurRadiusChange: (Dp) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val underlayState = rememberUnderlayState()
+    val currentOnSourceChange by rememberUpdatedState(onSourceChange)
+    val underlay = Modifier.sampleUnderlay(
+        blurRadius = blurRadius,
+        liveSnapshot = liveSnapshot,
+        state = underlayState,
+        onSourceChange = { currentOnSourceChange(it) },
+    )
+
+    DisposableEffect(Unit) {
+        onDispose { currentOnSourceChange(null) }
+    }
+
     @Composable
     fun Card(
-        kind: OverlayKind,
-        fillWidth: Boolean = false,
+        modifier: Modifier,
         shape: Shape = CARD_SHAPE,
         onClose: () -> Unit = onDismiss,
-    ) = UnderlayCard(
+    ) = OverlayCard(
         kind = kind,
+        source = source,
         blurRadius = blurRadius,
-        underlayState = underlayState,
-        onDismiss = onClose,
-        onRefresh = onRefresh,
         onBlurRadiusChange = onBlurRadiusChange,
-        modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(CARD_WIDTH),
+        onShuffle = {
+            onShuffle()
+            underlayState.refresh()
+        },
+        onClose = onClose,
+        modifier = modifier,
         shape = shape,
-        liveSnapshot = liveSnapshot,
     )
 
     when (kind) {
-        null, OverlayKind.TranslucentActivity -> Unit
-
-        OverlayKind.DialogWindow -> Dialog(onDismissRequest = onDismiss) {
-            RemoveDialogDim()
-            Card(kind)
+        OverlayKind.DialogWindow -> FullWindowDialog(onDismiss = onDismiss, modifier = underlay) {
+            Card(modifier = Modifier.width(cardWidth()).background(CARD_FILL))
         }
 
-        OverlayKind.PopupWindow -> PassThroughPopup(onDismiss = onDismiss) { Card(kind) }
+        OverlayKind.PopupWindow -> PassThroughPopup(onDismiss = onDismiss) {
+            Card(modifier = Modifier.width(cardWidth()).then(underlay))
+        }
 
         OverlayKind.BottomSheet -> TransparentBottomSheet(onDismiss = onDismiss) { shape, hide ->
-            Card(kind, fillWidth = true, shape = shape, onClose = hide)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(underlay)
+                    .verticalScroll(rememberScrollState())
+                    .navigationBarsPadding(),
+                shape = shape,
+                onClose = hide,
+            )
         }
 
         OverlayKind.ViewDialog -> ViewDialogOverlay(
             blurRadius = blurRadius,
             liveSnapshot = liveSnapshot,
-            onSourceChange = onViewSourceChange,
+            source = source,
+            onSourceChange = onSourceChange,
             onBlurRadiusChange = onBlurRadiusChange,
-            onRefresh = onRefresh,
+            onShuffle = onShuffle,
             onDismiss = onDismiss,
         )
 
-        OverlayKind.SameWindow -> ModalScrim(onDismiss = onDismiss) { Card(kind) }
+        OverlayKind.SameWindow -> ModalScrim(onDismiss = onDismiss) {
+            Card(modifier = Modifier.width(cardWidth()).then(underlay))
+        }
+
+        OverlayKind.TranslucentActivity -> Unit
+    }
+}
+
+/** A dialog whose window spans the screen, so the underlay on it covers everything behind. */
+@Composable
+private fun FullWindowDialog(onDismiss: () -> Unit, modifier: Modifier, content: @Composable () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        RemoveDialogDim()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(modifier)
+                .clickable(interactionSource = null, indication = null, onClick = onDismiss),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(modifier = Modifier.clickable(interactionSource = null, indication = null, onClick = {})) {
+                content()
+            }
+        }
     }
 }
 
@@ -106,7 +189,7 @@ private fun PassThroughPopup(onDismiss: () -> Unit, content: @Composable () -> U
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TransparentBottomSheet(onDismiss: () -> Unit, content: @Composable (shape: Shape, hide: () -> Unit) -> Unit) {
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val shape = BottomSheetDefaults.ExpandedShape
     val hide: () -> Unit = { scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() } }
@@ -154,11 +237,11 @@ private fun OverlayHostPreview() {
     SampleTheme {
         OverlayHost(
             kind = OverlayKind.SameWindow,
+            source = UnderlaySource.Fallback,
             blurRadius = DEFAULT_BLUR_RADIUS,
             liveSnapshot = false,
-            underlayState = rememberUnderlayState(),
-            onViewSourceChange = { },
-            onRefresh = { },
+            onSourceChange = { },
+            onShuffle = { },
             onBlurRadiusChange = { },
             onDismiss = { },
         )
