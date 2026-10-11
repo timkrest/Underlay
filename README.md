@@ -39,7 +39,7 @@ Details: [how it works](docs/how-it-works.md), [the article](docs/article-window
 
 ```kotlin
 dependencies {
-    implementation("com.timkrest:underlay:0.4.0")
+    implementation("com.timkrest:underlay:0.5.0")
 }
 ```
 

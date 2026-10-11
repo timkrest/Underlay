@@ -40,7 +40,7 @@ View-`Dialog` или `PopupWindow`.
 
 ```kotlin
 dependencies {
-    implementation("com.timkrest:underlay:0.4.0")
+    implementation("com.timkrest:underlay:0.5.0")
 }
 ```
 

@@ -7,6 +7,8 @@ version.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-11
+
 ### Added
 
 - `View.blurredUnderlay` for overlays built from Views: `android.app.Dialog`, `DialogFragment`,
@@ -26,6 +28,7 @@ version.
   metadata.
 - A negative or non-finite `blurRadius` means no blur.
 - No longer depends on `activity-compose`.
+- `:sample` opens every overlay kind from one dock over a scrolling feed and works in landscape.
 
 ### Fixed
 
@@ -142,7 +145,8 @@ version.
   `decorView` draw, `PixelCopy`, and `FLAG_BLUR_BEHIND`. The step each test asserts follows what the
   device offers, not the API level, so a device with cross-window blur switched off is covered too.
 
-[Unreleased]: https://github.com/timkrest/Underlay/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/timkrest/Underlay/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/timkrest/Underlay/releases/tag/v0.5.0
 [0.4.0]: https://github.com/timkrest/Underlay/releases/tag/v0.4.0
 [0.3.1]: https://github.com/timkrest/Underlay/releases/tag/v0.3.1
 [0.3.0]: https://github.com/timkrest/Underlay/releases/tag/v0.3.0

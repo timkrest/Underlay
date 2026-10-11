@@ -158,7 +158,7 @@ A solid color only appears if the capture fails outright.
 I put all of the above into a library.
 
 ```kotlin
-implementation("com.timkrest:underlay:0.4.0")
+implementation("com.timkrest:underlay:0.5.0")
 ```
 
 ```kotlin
