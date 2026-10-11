@@ -4,6 +4,7 @@ package com.timkrest.underlay.blur
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.underlay.halves
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith

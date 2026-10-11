@@ -53,7 +53,7 @@ internal class UnderlayBackdrop(
     }
 
     fun recapture() {
-        if (isReleased || rung == Rung.SystemBlur) return
+        if (rung == Rung.SystemBlur) return
 
         snapshot?.capture(radius.snapshotSigma)
     }
@@ -98,8 +98,6 @@ internal class UnderlayBackdrop(
     }
 
     private fun followHostDraws() {
-        if (isReleased) return
-
         hostEvents?.followDraws(isLive && snapshot != null && rung == Rung.Snapshot)
     }
 }

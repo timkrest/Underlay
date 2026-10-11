@@ -3,8 +3,8 @@
 package com.timkrest.underlay
 
 import android.app.Activity
-import android.content.Context
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.WindowManager
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
@@ -30,35 +30,40 @@ internal class UnderlayController(
     private val onRedraw: () -> Unit,
 ) {
 
-    private class Bound(val backdrop: UnderlayBackdrop, val windows: UnderlayWindows, val context: Context)
+    private class Bound(
+        val view: View,
+        val offsetInView: () -> Offset,
+        val observedTree: ViewTreeObserver,
+        val backdrop: UnderlayBackdrop,
+        val windows: UnderlayWindows,
+    )
 
     private val onMain = scope + Dispatchers.Main.immediate
     private val originInHost = OriginInHost()
     private val fader = SnapshotFader(onMain, onRedraw)
+    private val beforeDraw = ViewTreeObserver.OnPreDrawListener {
+        onBeforeDraw()
+        true
+    }
     private var bound: Bound? = null
     private var drawnOrigin: IntOffset? = null
 
-    var reportedSource: UnderlaySource? = null
+    var source: UnderlaySource? = null
         private set
-
-    val source: UnderlaySource get() = bound?.backdrop?.source ?: UnderlaySource.Fallback
 
     val snapshot: ImageBitmap? get() = bound?.backdrop?.image
 
     val snapshotAlpha: Float get() = fader.alpha
 
-    fun originToDraw(view: View, offsetInView: Offset = Offset.Zero): IntOffset? =
-        originOf(view, offsetInView).also { drawnOrigin = it }
+    fun recordDrawnOrigin(): IntOffset? = currentOrigin().also { drawnOrigin = it }
 
-    fun needsRedrawBeforeDraw(view: View, offsetInView: Offset = Offset.Zero): Boolean {
-        val backdrop = bound?.backdrop ?: return false
-        backdrop.reassertSystemBlur()
-        dropSnapshotIfHostTurnedSecure()
-
-        return backdrop.source == UnderlaySource.Snapshot && originOf(view, offsetInView) != drawnOrigin
-    }
-
-    fun bind(view: View, activity: Activity?, radius: BlurRadius, isLive: Boolean) {
+    fun bind(
+        view: View,
+        activity: Activity?,
+        radius: BlurRadius,
+        isLive: Boolean,
+        offsetInView: () -> Offset = { Offset.Zero },
+    ) {
         val windowManager = view.context.getSystemService<WindowManager>()
         val windows = UnderlayWindows.resolve(view, activity, windowManager)
         val host = windows.host
@@ -70,13 +75,17 @@ internal class UnderlayController(
             },
             onChange = ::onBackdropChange,
         )
+        val observedTree = view.viewTreeObserver.also { it.addOnPreDrawListener(beforeDraw) }
 
-        bound = Bound(backdrop, windows, view.context)
+        bound = Bound(view, offsetInView, observedTree, backdrop, windows)
         backdrop.start(radius, isLive)
     }
 
     fun unbind() {
-        bound?.backdrop?.release()
+        bound?.let {
+            it.observedTree.takeIf(ViewTreeObserver::isAlive)?.removeOnPreDrawListener(beforeDraw)
+            it.backdrop.release()
+        }
         bound = null
         drawnOrigin = null
         fader.stop()
@@ -85,7 +94,7 @@ internal class UnderlayController(
     fun release() {
         unbind()
         blur.release()
-        reportedSource = null
+        source = null
     }
 
     fun setRadius(radius: BlurRadius) {
@@ -105,23 +114,34 @@ internal class UnderlayController(
         if (bound.backdrop.image != null && !bound.windows.mayShowHost()) bound.backdrop.startOver()
     }
 
-    private fun originOf(view: View, offsetInView: Offset): IntOffset? =
-        bound?.windows?.host?.let { host -> originInHost.of(view, host, offsetInView) }
+    private fun onBeforeDraw() {
+        val backdrop = bound?.backdrop ?: return
+        backdrop.reassertSystemBlur()
+        dropSnapshotIfHostTurnedSecure()
+        if (source == UnderlaySource.Snapshot && currentOrigin() != drawnOrigin) onRedraw()
+    }
+
+    private fun currentOrigin(): IntOffset? {
+        val bound = bound ?: return null
+        val host = bound.windows.host ?: return null
+
+        return originInHost.of(bound.view, host, bound.offsetInView())
+    }
 
     private fun onBackdropChange() {
         val bound = bound ?: return
         val backdrop = bound.backdrop
-        val wasShowingSnapshot = reportedSource == UnderlaySource.Snapshot
+        val wasShowingSnapshot = source == UnderlaySource.Snapshot
 
         report(backdrop.source)
-        if (!wasShowingSnapshot && backdrop.image != null) fader.fadeIn(bound.context.animatorDurationScale())
+        if (!wasShowingSnapshot && backdrop.image != null) fader.fadeIn(bound.view.context.animatorDurationScale())
         onRedraw()
     }
 
     private fun report(source: UnderlaySource) {
-        if (source == reportedSource) return
+        if (source == this.source) return
 
-        reportedSource = source
+        this.source = source
         onSourceChange(source)
     }
 }

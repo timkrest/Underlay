@@ -4,17 +4,15 @@ package com.timkrest.underlay
 
 import android.app.Activity
 import android.content.res.Configuration
-import android.view.ViewTreeObserver
+import android.graphics.Rect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.DrawModifierNode
-import androidx.compose.ui.node.GlobalPositionAwareModifierNode
 import androidx.compose.ui.node.ObserverModifierNode
 import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.invalidateDraw
@@ -28,8 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import com.timkrest.underlay.backdrop.BlurRadius
 import com.timkrest.underlay.blur.SnapshotBlur
-import com.timkrest.underlay.snapshot.drawSnapshot
 import com.timkrest.underlay.window.findActivity
+import kotlin.math.roundToInt
 
 internal class UnderlayNode(
     private var blurRadius: Dp,
@@ -41,19 +39,14 @@ internal class UnderlayNode(
 ) : Modifier.Node(),
     DrawModifierNode,
     CompositionLocalConsumerModifierNode,
-    ObserverModifierNode,
-    GlobalPositionAwareModifierNode {
+    ObserverModifierNode {
 
+    private val painter = UnderlayPainter()
+    private val bounds = Rect()
     private var controller: UnderlayController? = null
     private var activity: Activity? = null
     private var configuration: Configuration? = null
     private var refreshes = 0
-    private var positionInRoot = Offset.Zero
-    private var observedTree: ViewTreeObserver? = null
-    private val beforeDraw = ViewTreeObserver.OnPreDrawListener {
-        if (controller?.needsRedrawBeforeDraw(requireView(), positionInRoot) == true) invalidateDraw()
-        true
-    }
 
     override fun onAttach() {
         controller = UnderlayController(
@@ -64,18 +57,14 @@ internal class UnderlayNode(
         )
         readHostContext()
         bindWindows()
-        observedTree = requireView().viewTreeObserver.also { it.addOnPreDrawListener(beforeDraw) }
     }
 
     override fun onDetach() {
-        observedTree?.takeIf { it.isAlive }?.removeOnPreDrawListener(beforeDraw)
-        observedTree = null
         controller?.release()
         controller = null
         state?.withdraw(this)
         activity = null
         configuration = null
-        positionInRoot = Offset.Zero
     }
 
     override fun onObservedReadsChanged() {
@@ -95,10 +84,6 @@ internal class UnderlayNode(
 
     override fun onDensityChange() {
         controller?.setRadius(blurRadiusInPx())
-    }
-
-    override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
-        positionInRoot = coordinates.positionInRoot()
     }
 
     fun update(
@@ -127,29 +112,22 @@ internal class UnderlayNode(
         if (isLivenessNew) controller?.setLive(liveSnapshot)
         if (isStateNew) {
             previousState?.withdraw(this)
-            state?.report(this, controller?.reportedSource)
+            state?.report(this, controller?.source)
             readHostContext()
         }
         if (isRepaintNeeded) invalidateDraw()
     }
 
     override fun ContentDrawScope.draw() {
-        val source = controller?.source ?: UnderlaySource.Fallback
-        if (source == UnderlaySource.Snapshot) drawHostSnapshot()
-        drawRect(if (source == UnderlaySource.Fallback) fallback else tint)
+        bounds.set(0, 0, size.width.roundToInt(), size.height.roundToInt())
+        painter.draw(drawContext.canvas.nativeCanvas, bounds, controller, tint.toArgb(), fallback.toArgb())
         drawContent()
     }
 
-    private fun DrawScope.drawHostSnapshot() {
-        val controller = controller ?: return
-        val snapshot = controller.snapshot ?: return
-        val origin = controller.originToDraw(requireView(), requireLayoutCoordinates().positionInRoot()) ?: return
-
-        drawSnapshot(snapshot, origin, controller.snapshotAlpha)
-    }
-
     private fun bindWindows() {
-        controller?.bind(requireView(), activity, blurRadiusInPx(), liveSnapshot)
+        controller?.bind(requireView(), activity, blurRadiusInPx(), liveSnapshot) {
+            requireLayoutCoordinates().positionInRoot()
+        }
     }
 
     private fun readHostContext() {

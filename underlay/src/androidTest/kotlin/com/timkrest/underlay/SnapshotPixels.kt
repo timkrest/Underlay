@@ -8,12 +8,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.core.graphics.createBitmap
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private const val CHANNEL_TOLERANCE = 8f / 255f
+private const val OPAQUE_RED = 0xFFFF0000.toInt()
+private const val OPAQUE_BLUE = 0xFF0000FF.toInt()
 
 internal fun ImageBitmap.pixelAt(x: Int, y: Int): Color {
     val readable = asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, false)
@@ -45,4 +49,10 @@ internal fun Color.tinted(tint: Color): Color = Color(
 
 internal fun Modifier.reportCenterOnScreen(onCenter: (Offset) -> Unit): Modifier = onGloballyPositioned { coordinates ->
     onCenter(coordinates.localToScreen(Offset(coordinates.size.width / 2f, coordinates.size.height / 2f)))
+}
+
+internal fun halves(size: Int = 64): ImageBitmap {
+    val pixels = IntArray(size * size) { if (it % size < size / 2) OPAQUE_RED else OPAQUE_BLUE }
+
+    return createBitmap(size, size).apply { setPixels(pixels, 0, size, 0, 0, size, size) }.asImageBitmap()
 }

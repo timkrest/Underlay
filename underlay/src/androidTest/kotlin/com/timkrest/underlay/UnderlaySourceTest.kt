@@ -47,28 +47,40 @@ class UnderlaySourceTest {
     }
 
     @Test
-    fun aDialogNeverReportsTheFallback() = assertABackdropFromTheFirstReport(inDialog)
+    fun aDialogNeverReportsTheFallback() = assertFalse(UnderlaySource.Fallback in awaitBackdrop(inDialog))
 
     @Test
-    fun aPopupNeverReportsTheFallback() = assertABackdropFromTheFirstReport(inPopup)
+    fun aPopupNeverReportsTheFallback() = assertFalse(UnderlaySource.Fallback in awaitBackdrop(inPopup))
 
     @Test
-    fun aMaterialAlertDialogNeverReportsTheFallback() = assertABackdropFromTheFirstReport(alertDialog)
+    fun aMaterialAlertDialogNeverReportsTheFallback() = assertFalse(UnderlaySource.Fallback in awaitBackdrop(alertDialog))
 
     @Test
-    fun aModalBottomSheetNeverReportsTheFallback() = assertABackdropFromTheFirstReport(bottomSheet)
+    fun aModalBottomSheetNeverReportsTheFallback() = assertFalse(UnderlaySource.Fallback in awaitBackdrop(bottomSheet))
 
     @Test
-    fun aDropdownMenuNeverReportsTheFallback() = assertABackdropFromTheFirstReport(dropdownMenu)
+    fun aDropdownMenuNeverReportsTheFallback() = assertFalse(UnderlaySource.Fallback in awaitBackdrop(dropdownMenu))
 
     @Test
-    fun withoutSystemBlurAModalBottomSheetFallsThroughToTheSnapshot() = assertTheSnapshotWins(bottomSheet)
+    fun withoutSystemBlurAModalBottomSheetFallsThroughToTheSnapshot() {
+        systemBlur.switchOff()
+
+        assertEquals(UnderlaySource.Snapshot, awaitBackdrop(bottomSheet).last())
+    }
 
     @Test
-    fun withoutSystemBlurADialogFallsThroughToTheSnapshot() = assertTheSnapshotWins(inDialog)
+    fun withoutSystemBlurADialogFallsThroughToTheSnapshot() {
+        systemBlur.switchOff()
+
+        assertEquals(UnderlaySource.Snapshot, awaitBackdrop(inDialog).last())
+    }
 
     @Test
-    fun withoutSystemBlurAPopupFallsThroughToTheSnapshot() = assertTheSnapshotWins(inPopup)
+    fun withoutSystemBlurAPopupFallsThroughToTheSnapshot() {
+        systemBlur.switchOff()
+
+        assertEquals(UnderlaySource.Snapshot, awaitBackdrop(inPopup).last())
+    }
 
     @Test
     fun aDialogFallsThroughToTheSnapshotWhenTheSystemStopsBlurring() =
@@ -79,10 +91,18 @@ class UnderlaySourceTest {
         assertTheSnapshotTakesOverFrom(inPopup)
 
     @Test
-    fun withSystemBlurADialogUsesTheWindowFlag() = assertTheWindowFlagWins(inDialog)
+    fun withSystemBlurADialogUsesTheWindowFlag() {
+        assumeTrue("cross-window blur is off on this device", isCrossWindowBlurEnabled())
+
+        assertEquals(UnderlaySource.SystemBlur, awaitBackdrop(inDialog).last())
+    }
 
     @Test
-    fun withSystemBlurAPopupUsesTheWindowFlag() = assertTheWindowFlagWins(inPopup)
+    fun withSystemBlurAPopupUsesTheWindowFlag() {
+        assumeTrue("cross-window blur is off on this device", isCrossWindowBlurEnabled())
+
+        assertEquals(UnderlaySource.SystemBlur, awaitBackdrop(inPopup).last())
+    }
 
     @Test
     fun theStateFollowsTheOverlayItIsPassedTo() {
@@ -113,28 +133,6 @@ class UnderlaySourceTest {
         assertEquals(UnderlaySource.Fallback, state.source, "the closing popup wiped the state of its successor")
     }
 
-    private fun assertABackdropFromTheFirstReport(overlay: Overlay) {
-        val reported = awaitSource(overlay) { it.isBackdrop() }
-
-        assertFalse(UnderlaySource.Fallback in reported, "an overlay in its own window never falls back")
-    }
-
-    private fun assertTheSnapshotWins(overlay: Overlay) {
-        systemBlur.switchOff()
-
-        val reported = awaitSource(overlay) { it.isBackdrop() }
-
-        assertEquals(UnderlaySource.Snapshot, reported.last())
-    }
-
-    private fun assertTheWindowFlagWins(overlay: Overlay) {
-        assumeTrue("cross-window blur is off on this device", isCrossWindowBlurEnabled())
-
-        val reported = awaitSource(overlay) { it.isBackdrop() }
-
-        assertEquals(UnderlaySource.SystemBlur, reported.last())
-    }
-
     private fun assertTheSnapshotTakesOverFrom(overlay: Overlay) {
         assumeTrue("cross-window blur is off on this device", isCrossWindowBlurEnabled())
 
@@ -150,11 +148,11 @@ class UnderlaySourceTest {
         }
     }
 
-    private fun awaitSource(overlay: Overlay, matches: (UnderlaySource) -> Boolean): List<UnderlaySource> {
+    private fun awaitBackdrop(overlay: Overlay): List<UnderlaySource> {
         val reported = showUnderlay(overlay)
 
-        compose.awaitOrFail({ "no matching source, reported $reported" }) {
-            reported.lastOrNull()?.let(matches) == true
+        compose.awaitOrFail({ "no backdrop, reported $reported" }) {
+            reported.lastOrNull()?.isBackdrop() == true
         }
 
         return reported.toList()

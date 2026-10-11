@@ -15,10 +15,10 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.window.Popup
 import androidx.core.content.getSystemService
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.underlay.dialogWindow
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
@@ -42,15 +42,15 @@ class OverlayWindowTest {
 
     @Test
     fun aDialogTakesTheFlagOnItsOwnWindow() {
-        var dialogWindow: Window? = null
+        var shown: Window? = null
         compose.setContent {
             Dialog(onDismissRequest = {}) {
-                dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+                shown = dialogWindow()
                 Box(Modifier.size(OVERLAY_SIZE))
             }
         }
         compose.waitForIdle()
-        val window = assertNotNull(dialogWindow, "a dialog owns a window")
+        val window = assertNotNull(shown, "a dialog owns a window")
 
         assertBlurBehindTravels(OverlayWindow.OfWindow(window)) { window.attributes }
     }

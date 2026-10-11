@@ -9,14 +9,13 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.content.getSystemService
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.underlay.backdrop.SystemBlurBehind
+import com.timkrest.underlay.dialogWindow
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
@@ -72,15 +71,15 @@ class CrossWindowBlurTest {
     }
 
     private fun showDialog(): Window {
-        var dialogWindow: Window? = null
+        var shown: Window? = null
         compose.setContent {
             Dialog(onDismissRequest = {}) {
-                dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+                shown = dialogWindow()
                 Box(Modifier.size(OVERLAY_SIZE))
             }
         }
         compose.waitForIdle()
-        return assertNotNull(dialogWindow, "a dialog owns a window")
+        return assertNotNull(shown, "a dialog owns a window")
     }
 
     private fun crossWindowBlur(overlay: OverlayWindow, isEnabled: Boolean): SystemBlurBehind {

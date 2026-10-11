@@ -12,6 +12,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntOffset
 import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.underlay.OPAQUE
+import com.timkrest.underlay.UnderlayPainter
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,11 +30,11 @@ class SnapshotDrawingTest {
         val onGpu = assertNotNull(snapshot.copy(Bitmap.Config.HARDWARE, false), "no hardware bitmap")
         val target = createBitmap(VIEW_PX, VIEW_PX)
 
-        CanvasSnapshotPainter().draw(
+        UnderlayPainter().drawSnapshot(
             canvas = Canvas(target),
-            hostSnapshot = onGpu.asImageBitmap(),
-            viewOriginInHost = IntOffset.Zero,
             bounds = Rect(0, 0, VIEW_PX, VIEW_PX),
+            hostSnapshot = onGpu.asImageBitmap(),
+            originInHost = IntOffset.Zero,
             alpha = OPAQUE,
         )
 
@@ -42,7 +44,6 @@ class SnapshotDrawingTest {
     private companion object {
         const val SNAPSHOT_PX = 16
         val VIEW_PX = CaptureScale.hostPixels(SNAPSHOT_PX)
-        const val OPAQUE = 255
         val SNAPSHOT_COLOR = Color.Red.toArgb()
     }
 }

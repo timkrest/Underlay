@@ -5,26 +5,18 @@ package com.timkrest.underlay
 import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Outline
-import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
-import android.view.View
 import androidx.annotation.ColorInt
-import com.timkrest.underlay.snapshot.CanvasSnapshotPainter
-import kotlin.math.roundToInt
-
-private const val OPAQUE = 255
 
 internal class UnderlayDrawable(
-    private val view: View,
     private val previousBackground: Drawable?,
     @ColorInt tint: Int,
     @ColorInt fallback: Int,
 ) : Drawable() {
 
-    private val fill = Paint()
-    private val painter = CanvasSnapshotPainter()
+    private val painter = UnderlayPainter()
     private var drawableAlpha = OPAQUE
 
     var controller: UnderlayController? = null
@@ -48,9 +40,7 @@ internal class UnderlayDrawable(
         }
 
     override fun draw(canvas: Canvas) {
-        val source = controller?.source ?: UnderlaySource.Fallback
-        if (source == UnderlaySource.Snapshot) drawHostSnapshot(canvas)
-        fill(canvas, if (source == UnderlaySource.Fallback) fallbackColor else tintColor)
+        painter.draw(canvas, bounds, controller, tintColor, fallbackColor, drawableAlpha)
     }
 
     override fun setAlpha(alpha: Int) {
@@ -61,7 +51,6 @@ internal class UnderlayDrawable(
     override fun getAlpha(): Int = drawableAlpha
 
     override fun setColorFilter(colorFilter: ColorFilter?) {
-        fill.colorFilter = colorFilter
         painter.setColorFilter(colorFilter)
         invalidateSelf()
     }
@@ -86,18 +75,4 @@ internal class UnderlayDrawable(
 
     @Deprecated("Deprecated in Java")
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
-
-    private fun drawHostSnapshot(canvas: Canvas) {
-        val controller = controller ?: return
-        val snapshot = controller.snapshot ?: return
-        val origin = controller.originToDraw(view) ?: return
-
-        painter.draw(canvas, snapshot, origin, bounds, alpha = (controller.snapshotAlpha * drawableAlpha).roundToInt())
-    }
-
-    private fun fill(canvas: Canvas, @ColorInt color: Int) {
-        fill.color = color
-        fill.alpha = fill.alpha * drawableAlpha / OPAQUE
-        canvas.drawRect(bounds, fill)
-    }
 }

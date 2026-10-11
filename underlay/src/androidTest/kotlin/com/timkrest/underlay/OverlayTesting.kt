@@ -4,6 +4,7 @@ package com.timkrest.underlay
 
 import android.os.Build
 import android.os.SystemClock
+import android.view.Window
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -35,10 +36,13 @@ internal val inPopup: Overlay = { content -> Popup { content() } }
 
 @Composable
 internal fun DropTheWindowDim() {
-    val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+    val window = dialogWindow()
 
     SideEffect { window?.setDimAmount(0f) }
 }
+
+@Composable
+internal fun dialogWindow(): Window? = (LocalView.current.parent as? DialogWindowProvider)?.window
 
 private const val TIMEOUT_MILLIS = 20_000L
 

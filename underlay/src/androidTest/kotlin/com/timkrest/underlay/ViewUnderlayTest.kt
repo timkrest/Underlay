@@ -85,8 +85,9 @@ class ViewUnderlayTest {
     @Test
     fun aSecureHostIsNotShownInAnOverlayThatIsNot() {
         systemBlur.switchOff()
+        compose.runOnUiThread { compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE) }
 
-        showInDialog(isHostSecure = true)
+        showInDialog()
 
         compose.awaitOrFail({ "the secure host was not refused, reported $reported" }) {
             reported.lastOrNull() == UnderlaySource.Fallback
@@ -186,6 +187,7 @@ class ViewUnderlayTest {
         compose.runOnUiThread { underlay.remove() }
 
         assertNull(first.source)
+        assertNull(underlay.source)
         assertSame(previous, content.background)
     }
 
@@ -203,18 +205,6 @@ class ViewUnderlayTest {
         assertSame(previous, content.background)
         assertNull(underlay.source)
         assertEquals(reportsAtRemove, reported.size, "reported $reported after remove()")
-    }
-
-    @Test
-    fun removingTheUnderlayPutsTheBackgroundBack() {
-        val previous = ColorDrawable(Color.Blue.toArgb())
-        val content = showInDialog(background = previous)
-        awaitBackdrop()
-
-        compose.runOnUiThread { underlay.remove() }
-
-        assertSame(previous, content.background)
-        assertNull(underlay.source)
     }
 
     @Test
@@ -236,12 +226,10 @@ class ViewUnderlayTest {
 
     private fun showInDialog(
         background: ColorDrawable? = null,
-        isHostSecure: Boolean = false,
         configureWindow: (Window) -> Unit = {},
     ): View {
         showHost()
         return compose.runOnUiThread {
-            if (isHostSecure) compose.activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
             val content = View(compose.activity).apply { this.background = background }
             installUnderlay(content)
             val frame = FrameLayout(compose.activity).apply {

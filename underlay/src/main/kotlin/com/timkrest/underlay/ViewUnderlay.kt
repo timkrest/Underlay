@@ -4,7 +4,6 @@
 
 package com.timkrest.underlay
 
-import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.annotation.ColorInt
@@ -67,8 +66,7 @@ public class ViewUnderlay internal constructor(
     private class Binding(val scope: CoroutineScope, val controller: UnderlayController)
 
     private val previousBackground = view.background
-    private val drawable = UnderlayDrawable(view, previousBackground, tint, fallback)
-    private val installedBackground: Drawable?
+    private val drawable = UnderlayDrawable(previousBackground, tint, fallback)
     private var binding: Binding? = null
     private var isRemoved = false
 
@@ -78,10 +76,7 @@ public class ViewUnderlay internal constructor(
         override fun onViewDetachedFromWindow(detached: View) = unbind()
     }
     private val beforeDraw = ViewTreeObserver.OnPreDrawListener {
-        when {
-            view.background !== installedBackground -> remove()
-            binding?.controller?.needsRedrawBeforeDraw(view) == true -> drawable.invalidateSelf()
-        }
+        if (view.background !== drawable) remove()
         true
     }
 
@@ -120,13 +115,11 @@ public class ViewUnderlay internal constructor(
     public var onSourceChange: OnSourceChangeListener? = onSourceChange
 
     /** Null while the view is detached or the underlay removed. */
-    public var source: UnderlaySource? = null
-        private set
+    public val source: UnderlaySource? get() = binding?.controller?.source
 
     init {
         view.setTag(R.id.underlay_view_underlay, this)
         view.background = drawable
-        installedBackground = view.background
         view.addOnAttachStateChangeListener(attachListener)
         if (view.isAttachedToWindow) view.post(::bind)
     }
@@ -147,7 +140,7 @@ public class ViewUnderlay internal constructor(
         view.removeOnAttachStateChangeListener(attachListener)
         unbind()
         if (view.getTag(R.id.underlay_view_underlay) === this) view.setTag(R.id.underlay_view_underlay, null)
-        if (view.background === installedBackground) view.background = previousBackground
+        if (view.background === drawable) view.background = previousBackground
     }
 
     private fun bind() {
@@ -174,11 +167,9 @@ public class ViewUnderlay internal constructor(
         drawable.controller = null
         binding.controller.release()
         binding.scope.cancel()
-        source = null
     }
 
     private fun onSourceReported(source: UnderlaySource) {
-        this.source = source
         onSourceChange?.onSourceChange(source)
     }
 }

@@ -4,12 +4,10 @@ package com.timkrest.underlay.blur
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.graphics.GraphicsContext
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.underlay.halves
 import com.timkrest.underlay.pixelAt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -48,12 +46,3 @@ class SnapshotBlurTest {
         val MIXED = 0.15f..0.85f
     }
 }
-
-internal fun halves(size: Int = 64): ImageBitmap {
-    val pixels = IntArray(size * size) { if (it % size < size / 2) OPAQUE_RED else OPAQUE_BLUE }
-
-    return createBitmap(size, size).apply { setPixels(pixels, 0, size, 0, 0, size, size) }.asImageBitmap()
-}
-
-private const val OPAQUE_RED = 0xFFFF0000.toInt()
-private const val OPAQUE_BLUE = 0xFF0000FF.toInt()

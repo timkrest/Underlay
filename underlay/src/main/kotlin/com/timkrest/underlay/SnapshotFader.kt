@@ -7,7 +7,6 @@ import android.content.Context
 import android.os.Build
 import android.os.SystemClock
 import android.provider.Settings
-import com.timkrest.underlay.backdrop.SnapshotFadeIn
 import com.timkrest.underlay.window.awaitVsync
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

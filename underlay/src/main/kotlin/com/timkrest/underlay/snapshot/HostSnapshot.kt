@@ -110,25 +110,19 @@ internal class HostSnapshot(
         currentCoroutineContext().ensureActive()
     }
 
-    private suspend fun captureOrNull(): ImageBitmap? {
-        val captured = try {
-            host.capture()
-        } catch (noMemoryForCapture: OutOfMemoryError) {
+    private suspend fun captureOrNull(): ImageBitmap? = nullIfOutOfMemory { host.capture() }
+
+    private suspend fun blurOrNull(captured: ImageBitmap, sigma: Float): ImageBitmap? =
+        nullIfOutOfMemory { if (sigma > 0f) blur.blur(captured, sigma) else captured }
+
+    private suspend inline fun nullIfOutOfMemory(work: () -> ImageBitmap?): ImageBitmap? {
+        val result = try {
+            work()
+        } catch (noMemory: OutOfMemoryError) {
             null
         }
         currentCoroutineContext().ensureActive()
 
-        return captured
-    }
-
-    private suspend fun blurOrNull(captured: ImageBitmap, sigma: Float): ImageBitmap? {
-        val blurred = try {
-            if (sigma > 0f) blur.blur(captured, sigma) else captured
-        } catch (noMemoryForBlur: OutOfMemoryError) {
-            null
-        }
-        currentCoroutineContext().ensureActive()
-
-        return blurred
+        return result
     }
 }

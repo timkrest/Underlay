@@ -52,23 +52,42 @@ class SnapshotRefreshTest {
     @Test
     fun aRefreshUnderADialogBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(inUndimmedDialog)
 
+    @Test
+    fun aLiveSnapshotUnderAPopupFollowsTheHostWithoutARefresh() = assertALiveSnapshotFollowsTheHost(inPopup)
+
+    @Test
+    fun aLiveSnapshotUnderADialogFollowsTheHostWithoutARefresh() = assertALiveSnapshotFollowsTheHost(inUndimmedDialog)
+
     private fun assertARefreshBringsTheHostWindowBack(overlay: Overlay) {
         systemBlur.switchOff()
-        showHostAndOverlay(overlay)
+        showHostAndOverlay(overlay, liveSnapshot = false)
         awaitHostOf(Color.Red)
         openTheOverlay()
         awaitTheFirstSnapshot()
-        awaitBackdropOf(Color.Red.tinted(TINT))
+        awaitBackdropOf(Color.Red)
 
         hostColor = Color.Blue
         assertTheHostMovedOnWithout(itsSnapshot = Color.Red)
 
         compose.runOnUiThread { underlay.refresh() }
 
-        awaitBackdropOf(Color.Blue.tinted(TINT))
+        awaitBackdropOf(Color.Blue)
 
         hostColor = Color.Yellow
         assertTheHostMovedOnWithout(itsSnapshot = Color.Blue)
+    }
+
+    private fun assertALiveSnapshotFollowsTheHost(overlay: Overlay) {
+        systemBlur.switchOff()
+        showHostAndOverlay(overlay, liveSnapshot = true)
+        openTheOverlay()
+        awaitBackdropOf(Color.Red)
+
+        hostColor = Color.Blue
+        awaitBackdropOf(Color.Blue)
+
+        hostColor = Color.Yellow
+        awaitBackdropOf(Color.Yellow)
     }
 
     private fun assertTheHostMovedOnWithout(itsSnapshot: Color) {
@@ -98,7 +117,7 @@ class SnapshotRefreshTest {
 
     private fun backdropProbe(): Offset = backdropOnScreen ?: error("the backdrop was never positioned")
 
-    private fun showHostAndOverlay(overlay: Overlay) {
+    private fun showHostAndOverlay(overlay: Overlay, liveSnapshot: Boolean) {
         compose.setContent {
             Box(Modifier.fillMaxSize().background(hostColor)) {
                 Box(
@@ -110,7 +129,7 @@ class SnapshotRefreshTest {
                 )
             }
 
-            if (isOverlayOpen) overlay { Backdrop() }
+            if (isOverlayOpen) overlay { Backdrop(liveSnapshot) }
         }
     }
 
@@ -131,24 +150,26 @@ class SnapshotRefreshTest {
         }
     }
 
-    private fun awaitBackdropOf(color: Color) {
-        compose.awaitOrFail({ "no $color backdrop at $backdropOnScreen, was ${backdropColor()}" }) {
-            backdropColor().matches(color)
+    private fun awaitBackdropOf(host: Color) {
+        val expected = host.tinted(TINT)
+        compose.awaitOrFail({ "no $expected backdrop over the $host host, ${state()}" }) {
+            val probe = backdropOnScreen ?: return@awaitOrFail false
+            screenshot().colorAt(probe).matches(expected)
         }
     }
 
-    private fun backdropColor(): Color = screenshot().colorAt(backdropProbe())
-
     @Composable
-    private fun Backdrop() {
+    private fun Backdrop(liveSnapshot: Boolean) {
         Box(
             Modifier
                 .size(BACKDROP_SIZE)
                 .reportCenterOnScreen { backdropOnScreen = it }
+                .background(BEHIND_THE_BACKDROP)
                 .blurredUnderlay(
                     blurRadius = 0.dp,
                     tint = TINT,
                     fallback = Color.Green,
+                    liveSnapshot = liveSnapshot,
                     state = underlay,
                     onSourceChange = { reported += it },
                 ),
