@@ -39,11 +39,10 @@ internal val CARD_CORNER = 28.dp
 internal val CARD_PADDING = 24.dp
 internal val CARD_SPACING = 12.dp
 internal val CARD_SHAPE = RoundedCornerShape(CARD_CORNER)
-private val CARD_MAX_WIDTH = 340.dp
-private val CARD_MARGIN = 20.dp
+internal val CARD_MAX_WIDTH = 340.dp
+internal val CARD_MARGIN = 20.dp
 private const val DISABLED_ALPHA = 0.38f
 
-/** The sample's one underlay: the same tint and fallback on every overlay kind. */
 @Composable
 internal fun Modifier.sampleUnderlay(
     blurRadius: Dp,
@@ -59,17 +58,13 @@ internal fun Modifier.sampleUnderlay(
     onSourceChange = onSourceChange,
 )
 
-/** Card width that fits the window with a margin on either side, [CARD_MAX_WIDTH] at most. */
 @Composable
 internal fun cardWidth(): Dp {
     val windowWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
     return minOf(CARD_MAX_WIDTH, windowWidth - CARD_MARGIN * 2)
 }
 
-/**
- * The overlay's content. [modifier] brings the backdrop: the underlay itself where the card is the
- * whole window, [CARD_FILL] where it floats over an underlay that fills the window.
- */
+/** [modifier] brings the backdrop: the underlay, or [CARD_FILL] over an underlay that fills the window. */
 @Composable
 internal fun OverlayCard(
     kind: OverlayKind,
@@ -89,70 +84,86 @@ internal fun OverlayCard(
             .padding(CARD_PADDING),
         verticalArrangement = Arrangement.spacedBy(CARD_SPACING),
     ) {
-        Text(
-            text = kind.windows.uppercase(),
-            color = CARD_SECONDARY_TEXT,
-            style = MaterialTheme.typography.labelSmall,
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = kind.label,
-                color = Color.White,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            UnderlaySourceBadge(source)
-        }
-        Text(
-            text = kind.explanation,
-            color = CARD_SECONDARY_TEXT,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BlurRadiusSlider(
-                blurRadius = blurRadius,
-                onBlurRadiusChange = onBlurRadiusChange,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = "${blurRadius.value.roundToInt()} dp",
-                color = Color.White,
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
-        Row(
+        CardHeader(kind = kind, source = source)
+        BlurControl(blurRadius = blurRadius, onBlurRadiusChange = onBlurRadiusChange)
+        CardActions(
+            shuffleEnabled = kind.hasHostWindow,
+            onShuffle = onShuffle,
+            onClose = onClose,
             modifier = Modifier.align(Alignment.End),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            TextButton(onClick = onShuffle, enabled = kind.hasHostWindow, colors = cardButtonColors()) {
-                Text(text = "Shuffle feed")
-            }
-            TextButton(onClick = onClose, colors = cardButtonColors()) {
-                Text(text = "Close")
-            }
-        }
+        )
     }
 }
 
 @Composable
-private fun cardButtonColors() = ButtonDefaults.textButtonColors(
-    contentColor = Color.White,
-    disabledContentColor = Color.White.copy(alpha = DISABLED_ALPHA),
-)
+private fun CardHeader(kind: OverlayKind, source: UnderlaySource?) {
+    Text(
+        text = kind.windows.uppercase(),
+        color = CARD_SECONDARY_TEXT,
+        style = MaterialTheme.typography.labelSmall,
+    )
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = kind.label,
+            color = Color.White,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        UnderlaySourceBadge(source)
+    }
+    Text(
+        text = kind.explanation,
+        color = CARD_SECONDARY_TEXT,
+        style = MaterialTheme.typography.bodyMedium,
+    )
+}
+
+@Composable
+private fun BlurControl(blurRadius: Dp, onBlurRadiusChange: (Dp) -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BlurRadiusSlider(
+            blurRadius = blurRadius,
+            onBlurRadiusChange = onBlurRadiusChange,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = "${blurRadius.value.roundToInt()} dp",
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
+}
+
+@Composable
+private fun CardActions(shuffleEnabled: Boolean, onShuffle: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = ButtonDefaults.textButtonColors(
+        contentColor = Color.White,
+        disabledContentColor = Color.White.copy(alpha = DISABLED_ALPHA),
+    )
+
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        TextButton(onClick = onShuffle, enabled = shuffleEnabled, colors = colors) {
+            Text(text = "Shuffle feed")
+        }
+        TextButton(onClick = onClose, colors = colors) {
+            Text(text = "Close")
+        }
+    }
+}
 
 @Preview
 @Composable
 private fun OverlayCardPreview() {
     SampleTheme {
         OverlayCard(
-            kind = OverlayKind.DialogWindow,
+            kind = HostedKind.DialogWindow,
             source = UnderlaySource.Snapshot,
             blurRadius = DEFAULT_BLUR_RADIUS,
             onBlurRadiusChange = { },

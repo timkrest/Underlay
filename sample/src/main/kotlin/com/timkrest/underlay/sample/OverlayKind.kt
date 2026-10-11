@@ -2,13 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.timkrest.underlay.sample
 
-internal enum class OverlayKind(
-    val label: String,
-    val hint: String,
-    val windows: String,
-    val explanation: String,
-    val hasHostWindow: Boolean,
-) {
+import androidx.compose.runtime.Immutable
+
+@Immutable
+internal sealed interface OverlayKind {
+    val label: String
+    val hint: String
+    val windows: String
+    val explanation: String
+    val hasHostWindow: Boolean
+
+    data object TranslucentActivity : OverlayKind {
+        override val label = "Translucent"
+        override val hint = "no host"
+        override val windows = "Own window · no host window"
+        override val explanation = "A translucent activity has no host window to capture: the system blur frosts " +
+            "the screen behind it, otherwise the card draws the flat fallback."
+        override val hasHostWindow = false
+    }
+
+    companion object {
+        val entries: List<OverlayKind> = listOf(
+            HostedKind.DialogWindow,
+            HostedKind.PopupWindow,
+            HostedKind.BottomSheet,
+            HostedKind.ViewDialog,
+            TranslucentActivity,
+            HostedKind.SameWindow,
+        )
+    }
+}
+
+internal enum class HostedKind(
+    override val label: String,
+    override val hint: String,
+    override val windows: String,
+    override val explanation: String,
+    override val hasHostWindow: Boolean,
+) : OverlayKind {
 
     DialogWindow(
         label = "Dialog",
@@ -43,15 +74,6 @@ internal enum class OverlayKind(
         windows = "Own window · host window",
         explanation = "android.app.Dialog built from Views, the underlay on its root through View.blurredUnderlay.",
         hasHostWindow = true,
-    ),
-
-    TranslucentActivity(
-        label = "Translucent",
-        hint = "no host",
-        windows = "Own window · no host window",
-        explanation = "A translucent activity has no host window to capture: the system blur frosts the screen " +
-            "behind it, otherwise the card draws the flat fallback.",
-        hasHostWindow = false,
     ),
 
     SameWindow(

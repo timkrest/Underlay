@@ -3,7 +3,9 @@
 package com.timkrest.underlay.sample
 
 import android.app.Dialog
+import android.content.Context
 import android.os.Build
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.compose.material3.MaterialTheme
@@ -18,7 +20,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.core.view.WindowCompat
 import com.timkrest.underlay.UnderlaySource
-import com.timkrest.underlay.ViewUnderlay
 
 @Composable
 internal fun ViewDialogOverlay(
@@ -42,32 +43,18 @@ internal fun ViewDialogOverlay(
             context = context,
             blurRadius = blurRadius,
             fallback = fallback,
+            onSourceChange = { currentOnSourceChange(it) },
             onBlurRadiusChange = { currentOnBlurRadiusChange(it) },
             onShuffle = { currentOnShuffle() },
             onClose = { currentOnDismiss() },
         )
     }
-    val dialog = remember(card) {
-        Dialog(context, R.style.Theme_Sample_ViewDialog).apply {
-            setContentView(card.root, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-            window?.let { window ->
-                WindowCompat.setDecorFitsSystemWindows(window, false)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.isNavigationBarContrastEnforced = false
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    window.attributes = window.attributes.apply {
-                        layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-                    }
-                }
-            }
-            setOnDismissListener { currentOnDismiss() }
-        }
-    }
+    val dialog = remember(card) { fullScreenDialog(context, card.root, onDismiss = { currentOnDismiss() }) }
 
     SideEffect {
         card.underlay.blurRadius = context.toPx(blurRadius).toFloat()
         card.underlay.liveSnapshot = liveSnapshot
-        card.underlay.onSourceChange = ViewUnderlay.OnSourceChangeListener { source -> currentOnSourceChange(source) }
-        card.showSource(source)
+        card.source = source
     }
 
     DisposableEffect(dialog) {
@@ -78,3 +65,18 @@ internal fun ViewDialogOverlay(
         }
     }
 }
+
+private fun fullScreenDialog(context: Context, content: View, onDismiss: () -> Unit) =
+    Dialog(context, R.style.Theme_Sample_ViewDialog).apply {
+        setContentView(content, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        window?.let { window ->
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.isNavigationBarContrastEnforced = false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
+            }
+        }
+        setOnDismissListener { onDismiss() }
+    }

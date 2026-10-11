@@ -33,18 +33,14 @@ private const val TITLE_SP = 24f
 private const val BODY_SP = 14f
 private const val BADGE_SP = 14f
 private val BADGE_DOT = 8.dp
-private val CARD_MAX_WIDTH = 340.dp
-private val CARD_MARGIN = 20.dp
 private val SLIDER_TINT = Color(0xFF9FD0FF)
 
-/**
- * The View dialog's content: a root that fills the window and carries the [underlay], with the card
- * centered on it. The Views counterpart of [OverlayCard].
- */
+/** The Views counterpart of [OverlayCard], centered on a [root] that fills the dialog window. */
 internal class ViewDialogCard(
     context: Context,
     blurRadius: Dp,
     fallback: Int,
+    onSourceChange: ViewUnderlay.OnSourceChangeListener,
     onBlurRadiusChange: (Dp) -> Unit,
     onShuffle: () -> Unit,
     onClose: () -> Unit,
@@ -66,12 +62,24 @@ internal class ViewDialogCard(
         blurRadius = root.context.toPx(blurRadius).toFloat(),
         tint = UNDERLAY_TINT.toArgb(),
         fallback = fallback,
+        onSourceChange = onSourceChange,
     )
 
-    fun showSource(source: UnderlaySource?) {
+    var source: UnderlaySource? = null
+        set(value) {
+            if (field == value) return
+            field = value
+            paintBadge()
+        }
+
+    init {
+        paintBadge()
+    }
+
+    private fun paintBadge() {
         val color = source.indicatorColor()
         badge.text = source?.description() ?: "Resolving"
-        badge.background = pill(color.copy(alpha = 0.18f), color.copy(alpha = 0.35f), badge.context)
+        badge.background = pill(color.copy(alpha = BADGE_FILL_ALPHA), color.copy(alpha = BADGE_BORDER_ALPHA), badge.context)
         (badge.compoundDrawablesRelative[0] as? GradientDrawable)?.setColor(color.toArgb())
     }
 
@@ -88,9 +96,9 @@ internal class ViewDialogCard(
         background = pill(CARD_FILL, CARD_BORDER, this@card, corner = CARD_CORNER)
         clipToOutline = true
 
-        addView(label(OverlayKind.ViewDialog.windows.uppercase(), EYEBROW_SP, CARD_SECONDARY_TEXT))
+        addView(label(HostedKind.ViewDialog.windows.uppercase(), EYEBROW_SP, CARD_SECONDARY_TEXT))
         addView(titleRow().spacedBelow())
-        addView(label(OverlayKind.ViewDialog.explanation, BODY_SP, CARD_SECONDARY_TEXT).spacedBelow())
+        addView(label(HostedKind.ViewDialog.explanation, BODY_SP, CARD_SECONDARY_TEXT).spacedBelow())
         addView(radiusRow(blurRadius, onBlurRadiusChange).spacedBelow())
         addView(buttonRow(onShuffle, onClose).spacedBelow())
     }
@@ -98,7 +106,7 @@ internal class ViewDialogCard(
     private fun Context.titleRow() = LinearLayout(this).apply {
         gravity = Gravity.CENTER_VERTICAL
         addView(
-            label(OverlayKind.ViewDialog.label, TITLE_SP, Color.White).apply { setTypeface(typeface, Typeface.BOLD) },
+            label(HostedKind.ViewDialog.label, TITLE_SP, Color.White).apply { setTypeface(typeface, Typeface.BOLD) },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
         )
         addView(badge)
@@ -115,13 +123,8 @@ internal class ViewDialogCard(
             },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
         )
-        addView(
-            value,
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                marginStart =
-                    toPx(12.dp)
-            },
-        )
+        val valueParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        addView(value, valueParams.apply { marginStart = toPx(12.dp) })
     }
 
     private fun Context.badge() = TextView(this).apply {
@@ -198,8 +201,8 @@ private fun ViewDialogCardPreview() {
     SampleTheme {
         AndroidView(
             factory = { context ->
-                ViewDialogCard(context, DEFAULT_BLUR_RADIUS, fallback = 0xFF101318.toInt(), {}, {}, {})
-                    .also { it.showSource(UnderlaySource.Snapshot) }
+                ViewDialogCard(context, DEFAULT_BLUR_RADIUS, fallback = 0xFF101318.toInt(), {}, {}, {}, {})
+                    .apply { source = UnderlaySource.Snapshot }
                     .root
             },
         )

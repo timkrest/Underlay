@@ -180,19 +180,24 @@ private fun BlurRow(
             onBlurRadiusChange = onBlurRadiusChange,
             modifier = Modifier.weight(1f),
         )
-        FilterChip(
-            selected = liveSnapshot,
-            onClick = { onLiveSnapshotChange(!liveSnapshot) },
-            label = { Text(text = "Live", maxLines = 1) },
-            border = null,
-            colors = FilterChipDefaults.filterChipColors(
-                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_FILL_ALPHA),
-                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        )
+        LiveChip(liveSnapshot = liveSnapshot, onLiveSnapshotChange = onLiveSnapshotChange)
     }
+}
+
+@Composable
+private fun LiveChip(liveSnapshot: Boolean, onLiveSnapshotChange: (Boolean) -> Unit) {
+    FilterChip(
+        selected = liveSnapshot,
+        onClick = { onLiveSnapshotChange(!liveSnapshot) },
+        label = { Text(text = "Live", maxLines = 1) },
+        border = null,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = TILE_FILL_ALPHA),
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+    )
 }
 
 @Preview
@@ -203,7 +208,7 @@ private fun ControlDockPreview() {
             layout = DockLayout.Bottom,
             blurRadius = DEFAULT_BLUR_RADIUS,
             overlaySource = UnderlaySource.Snapshot,
-            openKind = OverlayKind.DialogWindow,
+            openKind = HostedKind.DialogWindow,
             liveSnapshot = false,
             deviceInfo = "API 34 · cross-window blur on",
             onBlurRadiusChange = { },

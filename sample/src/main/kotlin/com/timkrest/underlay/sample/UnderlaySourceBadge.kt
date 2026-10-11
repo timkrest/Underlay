@@ -23,8 +23,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.timkrest.underlay.UnderlaySource
 
-private const val FILL_ALPHA = 0.18f
-private const val BORDER_ALPHA = 0.35f
+internal const val BADGE_FILL_ALPHA = 0.18f
+internal const val BADGE_BORDER_ALPHA = 0.35f
 private val IDLE_COLOR = Color(0xFF9AA3AF)
 
 @Composable
@@ -38,8 +38,8 @@ internal fun UnderlaySourceBadge(
     Row(
         modifier = modifier
             .clip(CircleShape)
-            .background(color.copy(alpha = FILL_ALPHA))
-            .border(1.dp, color.copy(alpha = BORDER_ALPHA), CircleShape)
+            .background(color.copy(alpha = BADGE_FILL_ALPHA))
+            .border(1.dp, color.copy(alpha = BADGE_BORDER_ALPHA), CircleShape)
             .padding(start = 10.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,

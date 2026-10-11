@@ -42,10 +42,9 @@ import kotlinx.coroutines.launch
 
 private val SAME_WINDOW_SCRIM = Color.Black.copy(alpha = 0.35f)
 
-/** Hosts the overlay kinds that live inside this activity; [OverlayKind.TranslucentActivity] is its own. */
 @Composable
 internal fun OverlayHost(
-    kind: OverlayKind?,
+    kind: HostedKind,
     source: UnderlaySource?,
     blurRadius: Dp,
     liveSnapshot: Boolean,
@@ -53,34 +52,7 @@ internal fun OverlayHost(
     onShuffle: () -> Unit,
     onBlurRadiusChange: (Dp) -> Unit,
     onDismiss: () -> Unit,
-) {
-    if (kind == null || kind == OverlayKind.TranslucentActivity) return
-
-    key(kind) {
-        HostedOverlay(
-            kind = kind,
-            source = source,
-            blurRadius = blurRadius,
-            liveSnapshot = liveSnapshot,
-            onSourceChange = onSourceChange,
-            onShuffle = onShuffle,
-            onBlurRadiusChange = onBlurRadiusChange,
-            onDismiss = onDismiss,
-        )
-    }
-}
-
-@Composable
-private fun HostedOverlay(
-    kind: OverlayKind,
-    source: UnderlaySource?,
-    blurRadius: Dp,
-    liveSnapshot: Boolean,
-    onSourceChange: (UnderlaySource?) -> Unit,
-    onShuffle: () -> Unit,
-    onBlurRadiusChange: (Dp) -> Unit,
-    onDismiss: () -> Unit,
-) {
+) = key(kind) {
     val underlayState = rememberUnderlayState()
     val currentOnSourceChange by rememberUpdatedState(onSourceChange)
     val underlay = Modifier.sampleUnderlay(
@@ -95,11 +67,7 @@ private fun HostedOverlay(
     }
 
     @Composable
-    fun Card(
-        modifier: Modifier,
-        shape: Shape = CARD_SHAPE,
-        onClose: () -> Unit = onDismiss,
-    ) = OverlayCard(
+    fun Card(modifier: Modifier, shape: Shape = CARD_SHAPE, onClose: () -> Unit = onDismiss) = OverlayCard(
         kind = kind,
         source = source,
         blurRadius = blurRadius,
@@ -114,15 +82,15 @@ private fun HostedOverlay(
     )
 
     when (kind) {
-        OverlayKind.DialogWindow -> FullWindowDialog(onDismiss = onDismiss, modifier = underlay) {
+        HostedKind.DialogWindow -> FullWindowDialog(onDismiss = onDismiss, modifier = underlay) {
             Card(modifier = Modifier.width(cardWidth()).background(CARD_FILL))
         }
 
-        OverlayKind.PopupWindow -> PassThroughPopup(onDismiss = onDismiss) {
+        HostedKind.PopupWindow -> PassThroughPopup(onDismiss = onDismiss) {
             Card(modifier = Modifier.width(cardWidth()).then(underlay))
         }
 
-        OverlayKind.BottomSheet -> TransparentBottomSheet(onDismiss = onDismiss) { shape, hide ->
+        HostedKind.BottomSheet -> TransparentBottomSheet(onDismiss = onDismiss) { shape, hide ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,7 +102,7 @@ private fun HostedOverlay(
             )
         }
 
-        OverlayKind.ViewDialog -> ViewDialogOverlay(
+        HostedKind.ViewDialog -> ViewDialogOverlay(
             blurRadius = blurRadius,
             liveSnapshot = liveSnapshot,
             source = source,
@@ -144,15 +112,12 @@ private fun HostedOverlay(
             onDismiss = onDismiss,
         )
 
-        OverlayKind.SameWindow -> ModalScrim(onDismiss = onDismiss) {
+        HostedKind.SameWindow -> ModalScrim(onDismiss = onDismiss) {
             Card(modifier = Modifier.width(cardWidth()).then(underlay))
         }
-
-        OverlayKind.TranslucentActivity -> Unit
     }
 }
 
-/** A dialog whose window spans the screen, so the underlay on it covers everything behind. */
 @Composable
 private fun FullWindowDialog(onDismiss: () -> Unit, modifier: Modifier, content: @Composable () -> Unit) {
     Dialog(
@@ -236,7 +201,7 @@ private fun RemoveDialogDim() {
 private fun OverlayHostPreview() {
     SampleTheme {
         OverlayHost(
-            kind = OverlayKind.SameWindow,
+            kind = HostedKind.SameWindow,
             source = UnderlaySource.Fallback,
             blurRadius = DEFAULT_BLUR_RADIUS,
             liveSnapshot = false,

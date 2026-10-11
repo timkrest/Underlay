@@ -8,14 +8,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.timkrest.underlay.UnderlaySource
 
-/** Everything the screen shows, owned by [SampleScreen] and changed only through `copy`. */
 @Immutable
 internal data class SampleState(
     val blurRadius: Dp = DEFAULT_BLUR_RADIUS,
     val openKind: OverlayKind? = null,
     val liveSnapshot: Boolean = false,
     val backdropShift: Int = 0,
-    /** Reported by the open overlay; not saved, the overlay reports it again after a restore. */
+    /** Not saved: the open overlay reports it again after a restore. */
     val overlaySource: UnderlaySource? = null,
 ) {
 
@@ -23,12 +22,17 @@ internal data class SampleState(
 
         val Saver = listSaver<SampleState, Any>(
             save = { state ->
-                listOf(state.blurRadius.value, state.openKind?.name.orEmpty(), state.liveSnapshot, state.backdropShift)
+                listOf(
+                    state.blurRadius.value,
+                    OverlayKind.entries.indexOf(state.openKind),
+                    state.liveSnapshot,
+                    state.backdropShift,
+                )
             },
             restore = { saved ->
                 SampleState(
                     blurRadius = (saved[0] as Float).dp,
-                    openKind = (saved[1] as String).takeIf { it.isNotEmpty() }?.let(OverlayKind::valueOf),
+                    openKind = OverlayKind.entries.getOrNull(saved[1] as Int),
                     liveSnapshot = saved[2] as Boolean,
                     backdropShift = saved[3] as Int,
                 )
