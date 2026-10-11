@@ -13,7 +13,7 @@ internal class OriginInHost {
     private val viewOnScreen = IntArray(2)
     private val hostOnScreen = IntArray(2)
 
-    fun of(view: View, host: Window, offsetInView: Offset = Offset.Zero): IntOffset {
+    fun of(view: View, host: Window, offsetInView: Offset): IntOffset {
         view.getLocationOnScreen(viewOnScreen)
         host.decorView.getLocationOnScreen(hostOnScreen)
 

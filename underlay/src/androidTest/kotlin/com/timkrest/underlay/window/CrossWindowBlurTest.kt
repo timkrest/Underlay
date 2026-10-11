@@ -3,19 +3,13 @@
 package com.timkrest.underlay.window
 
 import android.os.Build
-import android.view.Window
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.core.content.getSystemService
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.timkrest.underlay.backdrop.SystemBlurBehind
-import com.timkrest.underlay.dialogWindow
+import com.timkrest.underlay.showDialogWindow
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
@@ -39,7 +33,7 @@ class CrossWindowBlurTest {
 
     @Test
     fun withSystemBlurOffTheWindowKeepsTheBlurItSetItself() {
-        val window = showDialog()
+        val window = compose.showDialogWindow()
         val overlay = OverlayWindow.OfWindow(window)
         val systemBlur = crossWindowBlur(overlay, isEnabled = false)
 
@@ -55,7 +49,7 @@ class CrossWindowBlurTest {
 
     @Test
     fun withdrawingGivesBackTheBlurTheWindowHadWhenTheFlagWentOn() {
-        val window = showDialog()
+        val window = compose.showDialogWindow()
         val overlay = OverlayWindow.OfWindow(window)
         val systemBlur = crossWindowBlur(overlay, isEnabled = true)
 
@@ -68,18 +62,6 @@ class CrossWindowBlurTest {
         compose.runOnUiThread { systemBlur.release() }
 
         assertEquals(OWN_BLUR, compose.runOnUiThread { overlay.blurBehind })
-    }
-
-    private fun showDialog(): Window {
-        var shown: Window? = null
-        compose.setContent {
-            Dialog(onDismissRequest = {}) {
-                shown = dialogWindow()
-                Box(Modifier.size(OVERLAY_SIZE))
-            }
-        }
-        compose.waitForIdle()
-        return assertNotNull(shown, "a dialog owns a window")
     }
 
     private fun crossWindowBlur(overlay: OverlayWindow, isEnabled: Boolean): SystemBlurBehind {
@@ -97,6 +79,5 @@ class CrossWindowBlurTest {
     private companion object {
         const val RADIUS_PX = 24
         val OWN_BLUR = BlurBehind.on(29)
-        val OVERLAY_SIZE = 64.dp
     }
 }

@@ -83,7 +83,8 @@ internal class UnderlayController(
 
     fun unbind() {
         bound?.let {
-            it.observedTree.takeIf(ViewTreeObserver::isAlive)?.removeOnPreDrawListener(beforeDraw)
+            val tree = it.observedTree.takeIf(ViewTreeObserver::isAlive) ?: it.view.viewTreeObserver
+            tree.removeOnPreDrawListener(beforeDraw)
             it.backdrop.release()
         }
         bound = null

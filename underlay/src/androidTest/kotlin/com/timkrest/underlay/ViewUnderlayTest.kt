@@ -23,6 +23,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.core.view.doOnAttach
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Assume.assumeTrue
@@ -181,6 +182,7 @@ class ViewUnderlayTest {
         val content = showInDialog(background = previous)
         awaitBackdrop()
         val first = underlay
+        reported.clear()
 
         compose.runOnUiThread { installUnderlay(content) }
         awaitBackdrop()
@@ -193,18 +195,15 @@ class ViewUnderlayTest {
 
     @Test
     fun removingWhileTheFirstCaptureRunsStopsTheReports() {
+        systemBlur.switchOff()
         val previous = ColorDrawable(Color.Blue.toArgb())
-        val content = showInDialog(background = previous)
+        val content = showInDialog(background = previous, configureContent = { view -> view.doOnAttach { underlay.remove() } })
 
-        val reportsAtRemove = compose.runOnUiThread {
-            underlay.remove()
-            reported.size
-        }
+        compose.awaitOrFail({ "the underlay was never removed" }) { compose.runOnUiThread { content.background === previous } }
         SystemClock.sleep(SETTLE_MILLIS)
 
-        assertSame(previous, content.background)
+        assertEquals(listOf(UnderlaySource.Pending), reported, "the capture outlived remove()")
         assertNull(underlay.source)
-        assertEquals(reportsAtRemove, reported.size, "reported $reported after remove()")
     }
 
     @Test
@@ -214,7 +213,9 @@ class ViewUnderlayTest {
 
         compose.runOnUiThread { content.background = ColorDrawable(Color.Blue.toArgb()) }
 
-        compose.awaitOrFail({ "the underlay kept running under another background" }) { underlay.source == null }
+        compose.awaitOrFail({ "the underlay kept running under another background" }) {
+            compose.runOnUiThread { underlay.source } == null
+        }
     }
 
     private fun awaitBackdrop() {
@@ -227,11 +228,13 @@ class ViewUnderlayTest {
     private fun showInDialog(
         background: ColorDrawable? = null,
         configureWindow: (Window) -> Unit = {},
+        configureContent: (View) -> Unit = {},
     ): View {
         showHost()
         return compose.runOnUiThread {
             val content = View(compose.activity).apply { this.background = background }
             installUnderlay(content)
+            configureContent(content)
             val frame = FrameLayout(compose.activity).apply {
                 setBackgroundColor(BEHIND_THE_BACKDROP.toArgb())
                 addView(content, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)

@@ -6,11 +6,15 @@ import android.os.Build
 import android.os.SystemClock
 import android.view.Window
 import android.view.WindowManager
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.ComposeTimeoutException
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -20,6 +24,7 @@ import androidx.core.content.getSystemService
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.rules.ExternalResource
 import java.io.FileInputStream
+import kotlin.test.assertNotNull
 
 internal typealias Overlay = @Composable (content: @Composable () -> Unit) -> Unit
 
@@ -43,6 +48,18 @@ internal fun DropTheWindowDim() {
 
 @Composable
 internal fun dialogWindow(): Window? = (LocalView.current.parent as? DialogWindowProvider)?.window
+
+internal fun ComposeContentTestRule.showDialogWindow(): Window {
+    var shown: Window? = null
+    setContent {
+        Dialog(onDismissRequest = {}) {
+            shown = dialogWindow()
+            Box(Modifier.size(64.dp))
+        }
+    }
+    waitForIdle()
+    return assertNotNull(shown, "a dialog owns a window")
+}
 
 private const val TIMEOUT_MILLIS = 20_000L
 
