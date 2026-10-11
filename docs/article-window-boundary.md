@@ -63,8 +63,6 @@ params.blurBehindRadius = radiusPx
 windowManager.updateViewLayout(rootView, params)
 ```
 
-If that always worked, this post would end here.
-
 Cross-window blur can switch off while your app is running. Battery saver kills it:
 `isCrossWindowBlurEnabled` turns `false` and the flag stops meaning anything. The device is the
 same, API 31 hasn't gone anywhere, and there's no blur.
@@ -91,7 +89,7 @@ The system does tell you when it flips:
 windowManager.addCrossWindowBlurEnabledListener { isEnabled -> ... }
 ```
 
-and yes, it fires while the overlay is open, right in front of the user.
+and it can fire while the overlay is open.
 
 ## Step two: a snapshot of the other window
 
@@ -130,31 +128,30 @@ The blur itself depends on the API level:
   approximation of a Gaussian, and each pass is a sliding window, so the cost is O(1) per pixel
   whatever the radius.
 
-On both snapshot paths `blurRadius` means a Gaussian sigma, the same value
-`RenderEffect.createBlurEffect` takes. On the CPU it's converted into the box radius whose three
-passes come closest to that sigma:
+`blurRadius` is the radius `blurBehindRadius` and `RenderEffect.createBlurEffect` take. Both turn it
+into a Gaussian sigma the same way, `sigma = 0.57735·radius + 0.5`, so Underlay does too: the
+snapshot is blurred with that sigma scaled down to the ×4 capture, and on the CPU it becomes the box
+radius whose three passes come closest:
 
 ```
-radius = (sqrt(4·sigma² + 1) − 1) / 2
+boxRadius = (sqrt(4·sigma² + 1) − 1) / 2
 ```
 
-rounded to whichever neighbour is closer. Without that, the same mockup would look different on
-API 30 and API 31. The system step gets the same number as `blurBehindRadius`, which is a pixel
-radius SurfaceFlinger interprets its own way, so there the picture is close but not identical.
+rounded to whichever neighbor is closer. All three paths blur the same mockup equally hard.
 
 The box passes average premultiplied channels. If you average the unpremultiplied ones, a
-transparent neighbour drags its colour into the result and you get a coloured fringe along the edge
+transparent neighbor drags its color into the result and you get a colored fringe along the edge
 of a translucent window.
 
 ## Before the snapshot arrives, and when it never does
 
 Between the overlay appearing and the snapshot being ready there's a frame boundary, a `PixelCopy`
-and a blur. If you paint a solid colour in that gap, you get a flash. So while the capture is in
+and a blur. If you paint a solid color in that gap, you get a flash. So while the capture is in
 flight only the tint gets drawn: the host shows through sharp and then settles into the blur. I
 treat that as a state of its own rather than a loading placeholder. The snapshot then fades in over
 200 ms.
 
-A solid colour only appears if the capture fails outright.
+A solid color only appears if the capture fails outright.
 
 ## Underlay
 
@@ -206,7 +203,7 @@ underneath, then takes the best thing available. Step one from above is `SystemB
 | `SystemBlur` | API 31+, its own window, cross-window blur on | nothing, for the app |
 | `Snapshot` | API 23+, a reachable host window | frozen, or a couple of frames behind with `liveSnapshot` |
 | `Pending` | — | only the tint until the capture lands |
-| `Fallback` | — | a solid colour |
+| `Fallback` | — | a solid color |
 
 You can see which one won from outside, through a callback or as Compose state:
 
@@ -225,17 +222,16 @@ Modifier.blurredUnderlay(
 // underlay.refresh() — capture the host window again
 ```
 
-Without it you'd never find out that half your users have battery saver on and have been looking at
-a snapshot the whole time.
+Log it: that is how you learn how many users get a snapshot instead of the system blur.
 
 ## Who gets what
 
 | Called from | Own window | Host window | Best source |
 | --- | --- | --- | --- |
-| `Dialog` | the dialog window | the activity window | `SystemBlur` |
-| `Popup`, `PopupWindow` | a root view added through `WindowManager` | the activity window | `SystemBlur` |
-| `ModalBottomSheet`, `DropdownMenu` | their own window | the activity window | `SystemBlur` |
-| View `Dialog`, `BottomSheetDialog` | the dialog window | the activity window | `SystemBlur` |
+| `Dialog`, Material 3 `AlertDialog` | the dialog window | the activity window | `SystemBlur` |
+| `Popup`, `PopupWindow`, `DropdownMenu` | a root view added through `WindowManager` | the activity window | `SystemBlur` |
+| `ModalBottomSheet` | its own window | the activity window | `SystemBlur` |
+| View `Dialog`, `DialogFragment`, `BottomSheetDialog` | the dialog window | the activity window | `SystemBlur` |
 | Translucent activity | the activity window | none, what's under it is another activity | `SystemBlur` |
 | Plain overlay inside the activity | none | none | `Fallback` |
 
@@ -250,7 +246,7 @@ from `SystemBlur` straight to `Fallback`, skipping `Snapshot`.
 
 <img src="fallback.png"
      width="300"
-     alt="A translucent activity drawing the solid fallback colour, with no host window to capture">
+     alt="A translucent activity drawing the solid fallback color, with no host window to capture">
 
 ## Something to poke at
 
@@ -267,8 +263,6 @@ arrives under the tint.
 ```
 
 ## Limits
-
-A few things to know before you install it.
 
 The snapshot is frozen by default. It's taken when the overlay opens, again on a configuration
 change (rotation, split-screen) and whenever you call `refresh()`. For a list scrolling under a

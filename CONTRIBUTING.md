@@ -1,11 +1,7 @@
 # Contributing
 
-Bug reports, ideas and pull requests are all welcome.
-
-One report is worth more than the rest: which step the ladder reached on your device. The choice is
-made on the user's phone, not from the API level, so an issue with your `minSdk`, the manufacturer,
-what `adb shell dumpsys window | grep mBlurEnabled` answered and what `onSourceChange` reported says
-something no test here can.
+The most useful issue is a device report: device, Android version, your `minSdk`, the output of
+`adb shell dumpsys window | grep mBlurEnabled`, and the source `onSourceChange` reported.
 
 ## Building
 
@@ -56,7 +52,7 @@ For maintainers:
 
 1. Move the `Unreleased` entries under a `## [x.y.z] - yyyy-mm-dd` heading, add the matching link at
    the bottom of the changelog, set `VERSION_NAME` in `gradle.properties`, and point the dependency
-   snippets in both READMEs at the new version. Same commit.
+   snippets in both READMEs and both articles at the new version. Same commit.
 2. Tag it: `git tag -a vx.y.z -m "Underlay x.y.z" && git push origin vx.y.z`. The tag is what the
    release workflow publishes; `VERSION_NAME` only feeds the compatibility check on `main`.
 3. The workflow re-runs the checks and publishes to Maven Central, released rather than staged. A

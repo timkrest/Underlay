@@ -31,9 +31,9 @@ Dialog(onDismissRequest = ::dismiss) {
 
 `Dialog` — отдельное окно. `Modifier.blur()` внутри него размывает сам диалог, а не активити под
 ним. Библиотеки вроде haze умеют переносить через эту границу помеченное Compose-дерево; Underlay
-нужен, когда под оверлеем View, чужой код или `PopupWindow`. Он работает с окнами: `FLAG_BLUR_BEHIND`
-на API 31+, снимок через `PixelCopy` ниже. Задача в трекере платформы:
-[Support window blur in compose dialogs](https://issuetracker.google.com/issues/296272625).
+нужен, когда под оверлеем View или чужой код, или сам оверлей — View-`Dialog` или `PopupWindow`.
+Он работает с окнами: `FLAG_BLUR_BEHIND` на API 31+, снимок через `PixelCopy` ниже. Задача в
+трекере платформы: [Support window blur in compose dialogs](https://issuetracker.google.com/issues/296272625).
 
 Подробности и компромиссы: [статья](docs/article-window-boundary.ru.md) и
 [как это устроено](docs/how-it-works.ru.md).
@@ -78,8 +78,8 @@ Box(
 }
 ```
 
-`Snapshot` снимается при открытии оверлея, при смене размера или конфигурации host-окна и по
-`refresh()`. `liveSnapshot = true` снимает host-окно при каждой его отрисовке, с отставанием в пару
+`Snapshot` снимается при открытии оверлея, при смене размера host-окна, при смене конфигурации (только
+в Compose; с View вызывайте `refresh()`) и по `refresh()`. `liveSnapshot = true` снимает host-окно при каждой его отрисовке, с отставанием в пару
 кадров, ценой `PixelCopy` и размытия на каждый кадр.
 
 ## View

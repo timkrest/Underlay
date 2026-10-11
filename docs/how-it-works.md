@@ -12,7 +12,7 @@ Underlay resolves two windows: the one the caller lives in, and the host window 
 | `Popup`, `PopupWindow`, `DropdownMenu` | root view added through `WindowManager` | activity window | `SystemBlur` |
 | `ModalBottomSheet` | its own window | activity window | `SystemBlur` |
 | View `Dialog`, `DialogFragment`, `BottomSheetDialog` | dialog window | activity window | `SystemBlur` |
-| Translucent or floating activity | activity window | none, it belongs to another task | `SystemBlur` |
+| Translucent or floating activity | activity window | none, the window underneath belongs to another activity | `SystemBlur` |
 | Overlay inside the activity window | none | none | `Fallback` |
 
 Without a window of its own the host window would be the caller's own window, and the snapshot would
@@ -25,7 +25,7 @@ A translucent activity has no host window either, so it drops from `SystemBlur` 
 ## The system blur
 
 `FLAG_BLUR_BEHIND` and `blurBehindRadius` go on the overlay window: through `Window.setAttributes`
-for a dialog, through `WindowManager.updateViewLayout` for a popup. The system blurs everything behind
+for a Compose `Dialog`, through `WindowManager.updateViewLayout` for everything else. The system blurs everything behind
 the window, live, at no cost to the app.
 
 Cross-window blur can be off: battery saver turns it off, and some vendors never turn it on.
@@ -42,10 +42,15 @@ window, and is blurred with `RenderEffect` on the GPU from API 31, with three bo
 `Dispatchers.Default` below it. Until it lands only the tint is drawn, and the first snapshot fades
 in over 200 ms.
 
-`blurRadius` is a Gaussian sigma, the meaning `RenderEffect.createBlurEffect` gives it, taken on the
-×4 downscale. On the CPU it becomes the box radius whose three passes come nearest:
-`radius = (sqrt(4*sigma^2 + 1) - 1) / 2`, rounded to the closer neighbour. The box passes average
-premultiplied channels, so a transparent neighbour does not bleed its color.
+`blurRadius` is the radius `Modifier.blur`, `blurBehindRadius` and `RenderEffect.createBlurEffect`
+take, in window pixels. The platform turns it into a Gaussian sigma as `0.57735 * radius + 0.5`, and
+the snapshot uses the same sigma at its quarter scale, so all three paths blur equally hard. On the
+CPU the sigma becomes the box radius whose three passes come nearest,
+`(sqrt(4*sigma^2 + 1) - 1) / 2` rounded to the closer neighbor. The box passes average premultiplied
+channels, so a transparent neighbor does not bleed its color.
+
+A host window with `FLAG_SECURE` is captured only into an overlay window that is secure too, which a
+Compose `Dialog` or `Popup` is by default. Otherwise the snapshot step is skipped.
 
 ## Trade-offs
 

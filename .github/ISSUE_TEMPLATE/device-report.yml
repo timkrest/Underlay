@@ -1,0 +1,41 @@
+name: Device report
+description: Which source the library reached on a device
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: Pixel 8, Galaxy S25 Ultra
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android version
+      placeholder: "16"
+    validations:
+      required: true
+  - type: input
+    id: min-sdk
+    attributes:
+      label: Your minSdk
+  - type: input
+    id: blur-enabled
+    attributes:
+      label: adb shell dumpsys window | grep mBlurEnabled
+      placeholder: mBlurEnabled=true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source reported by onSourceChange
+      options:
+        - SystemBlur
+        - Snapshot
+        - Pending
+        - Fallback
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What you expected and what happened

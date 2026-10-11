@@ -31,7 +31,8 @@ Dialog(onDismissRequest = ::dismiss) {
 
 A `Dialog` is a separate window. `Modifier.blur()` inside it blurs the dialog, not the activity
 behind it. Libraries like haze can carry a Compose subtree you mark across that boundary; Underlay is
-for when the screen behind is Views, code you don't own, or a `PopupWindow`. It works on windows:
+for when the screen behind is Views or code you don't own, or the overlay is a View `Dialog` or a
+`PopupWindow`. It works on windows:
 `FLAG_BLUR_BEHIND` on API 31+, a `PixelCopy` snapshot below that. Platform issue:
 [Support window blur in compose dialogs](https://issuetracker.google.com/issues/296272625).
 
@@ -78,8 +79,8 @@ Box(
 }
 ```
 
-`Snapshot` is taken when the overlay opens, when the host resizes or changes configuration, and on
-`refresh()`. `liveSnapshot = true` captures the host again every time it draws, a couple of frames
+`Snapshot` is taken when the overlay opens, when the host resizes, on a configuration change (Compose
+only; with Views call `refresh()`) and on `refresh()`. `liveSnapshot = true` captures the host again every time it draws, a couple of frames
 behind, at a `PixelCopy` and a blur per host frame.
 
 ## Views
