@@ -59,9 +59,8 @@ private fun UnderlaySource.description(): String = when (this) {
 private fun UnderlaySource?.indicatorColor(): Color = when (this) {
     UnderlaySource.SystemBlur -> Color(0xFF7BE495)
     UnderlaySource.Snapshot -> Color(0xFFFFD166)
-    UnderlaySource.Pending -> Color(0xFF9AA3AF)
     UnderlaySource.Fallback -> Color(0xFFFF8A80)
-    null -> Color(0xFF9AA3AF)
+    UnderlaySource.Pending, null -> Color(0xFF9AA3AF)
 }
 
 @Preview

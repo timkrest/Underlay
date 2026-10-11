@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +27,7 @@ class TranslucentOverlayActivity : ComponentActivity() {
         val initialBlurRadius = intent.getFloatExtra(EXTRA_BLUR_RADIUS, DEFAULT_BLUR_RADIUS.value).dp
 
         setContent {
-            var blurRadius by remember { mutableStateOf(initialBlurRadius) }
+            var blurRadiusDp by rememberSaveable { mutableFloatStateOf(initialBlurRadius.value) }
 
             SampleTheme {
                 Box(
@@ -36,11 +36,11 @@ class TranslucentOverlayActivity : ComponentActivity() {
                 ) {
                     UnderlayCard(
                         kind = OverlayKind.TranslucentActivity,
-                        blurRadius = blurRadius,
+                        blurRadius = blurRadiusDp.dp,
                         underlayState = rememberUnderlayState(),
                         onDismiss = ::finish,
                         onRefresh = {},
-                        onBlurRadiusChange = { radius -> blurRadius = radius },
+                        onBlurRadiusChange = { radius -> blurRadiusDp = radius.value },
                         modifier = Modifier.width(CARD_WIDTH),
                     )
                 }

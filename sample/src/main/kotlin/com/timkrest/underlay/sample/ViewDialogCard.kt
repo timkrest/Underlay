@@ -8,43 +8,74 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewOutlineProvider
+import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import kotlin.math.roundToInt
 
 private const val TITLE_SP = 24f
 private const val BODY_SP = 14f
 
-internal fun viewDialogCard(context: Context, onClose: () -> Unit): LinearLayout =
-    LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        val padding = context.dp(CARD_PADDING.value)
-        setPadding(padding, padding, padding, padding)
-        roundCorners(context.dp(CARD_CORNER.value).toFloat())
+internal fun viewDialogCard(
+    context: Context,
+    blurRadius: Dp,
+    onBlurRadiusChange: (Dp) -> Unit,
+    onClose: () -> Unit,
+): LinearLayout = LinearLayout(context).apply {
+    orientation = LinearLayout.VERTICAL
+    val padding = context.toPx(CARD_PADDING)
+    setPadding(padding, padding, padding, padding)
+    roundCorners(context.toPx(CARD_CORNER).toFloat())
 
-        addView(text(context, OverlayKind.ViewDialog.label, TITLE_SP, Color.White.toArgb()))
-        addView(text(context, OverlayKind.ViewDialog.explanation, BODY_SP, CARD_SECONDARY_TEXT.toArgb()).spacedBelow(context))
-        addView(
-            text(context, "Close", BODY_SP, Color.White.toArgb()).apply {
-                gravity = Gravity.END
-                setOnClickListener { onClose() }
-            }.spacedBelow(context),
-        )
-    }
+    addView(label(OverlayKind.ViewDialog.label, TITLE_SP, Color.White))
+    addView(label(OverlayKind.ViewDialog.explanation, BODY_SP, CARD_SECONDARY_TEXT).spacedBelow())
+    addView(radiusSeekBar(blurRadius, onBlurRadiusChange).spacedBelow())
+    addView(closeButton(onClose).spacedBelow())
+}
 
-private fun text(context: Context, text: String, sizeSp: Float, color: Int) = TextView(context).apply {
+private fun View.label(text: String, sizeSp: Float, color: Color) = TextView(context).apply {
     this.text = text
-    setTextColor(color)
+    setTextColor(color.toArgb())
     setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp)
 }
 
-private fun View.spacedBelow(context: Context): View = apply {
+private fun View.radiusSeekBar(blurRadius: Dp, onBlurRadiusChange: (Dp) -> Unit) = SeekBar(context).apply {
+    max = MAX_BLUR_RADIUS.value.roundToInt()
+    progress = blurRadius.value.roundToInt()
+    setOnSeekBarChangeListener(
+        object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                if (fromUser) onBlurRadiusChange(progress.dp)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) = Unit
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) = Unit
+        },
+    )
+}
+
+private fun View.closeButton(onClose: () -> Unit) =
+    Button(context, null, android.R.attr.borderlessButtonStyle).apply {
+        text = context.getString(android.R.string.cancel)
+        setTextColor(Color.White.toArgb())
+        gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        setOnClickListener { onClose() }
+    }
+
+private fun View.spacedBelow(): View = apply {
     layoutParams = LinearLayout.LayoutParams(
         LinearLayout.LayoutParams.MATCH_PARENT,
         LinearLayout.LayoutParams.WRAP_CONTENT,
-    ).apply { topMargin = context.dp(CARD_SPACING.value) }
+    ).apply { topMargin = context.toPx(CARD_SPACING) }
 }
 
 private fun View.roundCorners(radius: Float) {
@@ -56,4 +87,16 @@ private fun View.roundCorners(radius: Float) {
     clipToOutline = true
 }
 
-internal fun Context.dp(value: Float): Int = (value * resources.displayMetrics.density).roundToInt()
+internal fun Context.toPx(dp: Dp): Int = (dp.value * resources.displayMetrics.density).roundToInt()
+
+@Preview
+@Composable
+private fun ViewDialogCardPreview() {
+    SampleTheme {
+        AndroidView(
+            factory = { context ->
+                viewDialogCard(context, DEFAULT_BLUR_RADIUS, onBlurRadiusChange = {}, onClose = {})
+            },
+        )
+    }
+}

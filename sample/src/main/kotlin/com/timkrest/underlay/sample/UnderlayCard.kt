@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +36,12 @@ internal val CARD_SHAPE = RoundedCornerShape(CARD_CORNER)
 internal val CARD_SECONDARY_TEXT = Color.White.copy(alpha = 0.76f)
 private val CARD_BORDER = Color.White.copy(alpha = 0.16f)
 private const val DISABLED_ALPHA = 0.38f
+
+@Composable
+private fun cardButtonColors() = ButtonDefaults.textButtonColors(
+    contentColor = Color.White,
+    disabledContentColor = Color.White.copy(alpha = DISABLED_ALPHA),
+)
 
 @Composable
 internal fun UnderlayCard(
@@ -83,14 +90,11 @@ internal fun UnderlayCard(
             modifier = Modifier.align(Alignment.End),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            TextButton(onClick = onRefresh, enabled = kind.hasHostWindow) {
-                Text(
-                    text = "Shuffle backdrop",
-                    color = Color.White.copy(alpha = if (kind.hasHostWindow) 1f else DISABLED_ALPHA),
-                )
+            TextButton(onClick = onRefresh, enabled = kind.hasHostWindow, colors = cardButtonColors()) {
+                Text(text = "Shuffle backdrop")
             }
-            TextButton(onClick = onDismiss) {
-                Text(text = "Close", color = Color.White)
+            TextButton(onClick = onDismiss, colors = cardButtonColors()) {
+                Text(text = "Close")
             }
         }
     }

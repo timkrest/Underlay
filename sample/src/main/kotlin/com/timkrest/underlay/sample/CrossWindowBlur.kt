@@ -15,7 +15,7 @@ import androidx.core.content.getSystemService
 import java.util.function.Consumer
 
 @Composable
-internal fun isCrossWindowBlurEnabled(): Boolean? {
+internal fun rememberCrossWindowBlurEnabled(): Boolean? {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null
     val windowManager = LocalContext.current.getSystemService<WindowManager>() ?: return null
     var isEnabled by remember(windowManager) { mutableStateOf(windowManager.isCrossWindowBlurEnabled) }

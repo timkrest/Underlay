@@ -4,6 +4,8 @@ plugins {
 }
 
 android {
+    namespace = "com.timkrest.underlay.sample"
+
     defaultConfig {
         applicationId = "com.timkrest.underlay.sample"
         versionCode = 1

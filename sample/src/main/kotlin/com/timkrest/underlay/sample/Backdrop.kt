@@ -28,6 +28,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
+internal val TILE_SPACING = 12.dp
+
 private const val TILE_REPEATS = 4
 private const val BANNER_EVERY = 7
 private val TILE_SHAPE = RoundedCornerShape(20.dp)
@@ -49,8 +51,8 @@ internal fun Backdrop(
         columns = GridCells.Fixed(2),
         modifier = modifier.fillMaxSize(),
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(TILE_SPACING),
+        verticalArrangement = Arrangement.spacedBy(TILE_SPACING),
     ) {
         items(
             count = tiles.images.size * TILE_REPEATS,

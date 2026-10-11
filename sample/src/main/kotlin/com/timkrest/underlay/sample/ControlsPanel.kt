@@ -32,7 +32,8 @@ internal fun ControlsPanel(
     blurRadius: Dp,
     overlaySource: UnderlaySource?,
     areTilesHardware: Boolean?,
-    isLiveSnapshot: Boolean,
+    crossWindowBlur: Boolean?,
+    liveSnapshot: Boolean,
     onBlurRadiusChange: (Dp) -> Unit,
     onLiveSnapshotChange: (Boolean) -> Unit,
     onOpen: (OverlayKind) -> Unit,
@@ -51,18 +52,18 @@ internal fun ControlsPanel(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            BlurRadiusRow(blurRadius = blurRadius, overlaySource = overlaySource)
+            PanelHeader(blurRadius = blurRadius, overlaySource = overlaySource)
             BlurRadiusSlider(blurRadius = blurRadius, onBlurRadiusChange = onBlurRadiusChange)
-            LiveSnapshotRow(isLive = isLiveSnapshot, onLiveChange = onLiveSnapshotChange)
+            LiveSnapshotRow(liveSnapshot = liveSnapshot, onLiveSnapshotChange = onLiveSnapshotChange)
             tilesHint(areTilesHardware)?.let { hint -> Hint(text = hint) }
-            Hint(text = crossWindowBlurHint(isCrossWindowBlurEnabled()))
+            Hint(text = crossWindowBlurHint(crossWindowBlur))
             OverlayKindButtons(onOpen = onOpen)
         }
     }
 }
 
 @Composable
-private fun BlurRadiusRow(blurRadius: Dp, overlaySource: UnderlaySource?) {
+private fun PanelHeader(blurRadius: Dp, overlaySource: UnderlaySource?) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -77,7 +78,7 @@ private fun BlurRadiusRow(blurRadius: Dp, overlaySource: UnderlaySource?) {
 }
 
 @Composable
-private fun LiveSnapshotRow(isLive: Boolean, onLiveChange: (Boolean) -> Unit) {
+private fun LiveSnapshotRow(liveSnapshot: Boolean, onLiveSnapshotChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -87,7 +88,7 @@ private fun LiveSnapshotRow(isLive: Boolean, onLiveChange: (Boolean) -> Unit) {
             Text(text = "Live snapshot", style = MaterialTheme.typography.titleMedium)
             Hint(text = "Capture the host again every time it draws. Open a Popup and scroll the grid under it.")
         }
-        Switch(checked = isLive, onCheckedChange = onLiveChange)
+        Switch(checked = liveSnapshot, onCheckedChange = onLiveSnapshotChange)
     }
 }
 
@@ -125,9 +126,9 @@ private fun tilesHint(areTilesHardware: Boolean?): String? = when (areTilesHardw
 }
 
 private fun crossWindowBlurHint(isEnabled: Boolean?): String = when (isEnabled) {
-    null -> "Cross-window blur: needs API 31, this device is older. SystemBlur is out of the ladder."
-    true -> "Cross-window blur: on. Turn Battery Saver on to watch an open overlay fall through to Snapshot."
-    false -> "Cross-window blur: off on this device, so SystemBlur is out of the ladder."
+    null -> "Cross-window blur needs API 31. SystemBlur is unavailable."
+    true -> "Cross-window blur is on. Turn on Battery Saver to see an open overlay switch to Snapshot."
+    false -> "Cross-window blur is off on this device. SystemBlur is unavailable."
 }
 
 @Preview
@@ -138,7 +139,8 @@ private fun ControlsPanelPreview() {
             blurRadius = DEFAULT_BLUR_RADIUS,
             overlaySource = UnderlaySource.Snapshot,
             areTilesHardware = true,
-            isLiveSnapshot = false,
+            crossWindowBlur = true,
+            liveSnapshot = false,
             onBlurRadiusChange = { },
             onLiveSnapshotChange = { },
             onOpen = { },

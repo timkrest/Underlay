@@ -23,6 +23,8 @@ import kotlinx.coroutines.withContext
 private const val TILE_SIZE = 512
 private const val CIRCLES_PER_TILE = 5
 private const val CIRCLE_ALPHA = 46
+private const val TILE_STRIDE = 37
+private const val CIRCLE_STRIDE = 61
 
 private val GRADIENTS = listOf(
     Color(0xFFFF5F6D) to Color(0xFFFFC371),
@@ -86,7 +88,7 @@ private fun drawCircles(canvas: Canvas, seed: Int) {
         alpha = CIRCLE_ALPHA
     }
     repeat(CIRCLES_PER_TILE) { step ->
-        val position = (seed * 37 + step * 61) % TILE_SIZE
+        val position = (seed * TILE_STRIDE + step * CIRCLE_STRIDE) % TILE_SIZE
         canvas.drawCircle(
             position.toFloat(),
             (TILE_SIZE - position).toFloat(),

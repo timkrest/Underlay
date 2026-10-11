@@ -25,18 +25,18 @@ import androidx.compose.ui.unit.dp
 import com.timkrest.underlay.UnderlaySource
 import com.timkrest.underlay.rememberUnderlayState
 
-private val BACKDROP_GUTTER = 12.dp
-
 @Composable
 internal fun SampleScreen(modifier: Modifier = Modifier) {
     var blurRadiusDp by rememberSaveable { mutableFloatStateOf(DEFAULT_BLUR_RADIUS.value) }
     var openKind by rememberSaveable { mutableStateOf<OverlayKind?>(null) }
     var backdropShift by rememberSaveable { mutableIntStateOf(0) }
-    var isLiveSnapshot by rememberSaveable { mutableStateOf(false) }
+    var liveSnapshot by rememberSaveable { mutableStateOf(false) }
     var viewDialogSource by remember { mutableStateOf<UnderlaySource?>(null) }
     val underlayState = rememberUnderlayState()
     val blurRadius = blurRadiusDp.dp
+    val onBlurRadiusChange: (Dp) -> Unit = { radius -> blurRadiusDp = radius.value }
     val tiles = rememberGradientTiles()
+    val crossWindowBlur = rememberCrossWindowBlurEnabled()
     val context = LocalContext.current
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -46,9 +46,10 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
                     blurRadius = blurRadius,
                     overlaySource = underlayState.source ?: viewDialogSource,
                     areTilesHardware = tiles?.areHardware,
-                    isLiveSnapshot = isLiveSnapshot,
-                    onBlurRadiusChange = { blurRadiusDp = it.value },
-                    onLiveSnapshotChange = { isLiveSnapshot = it },
+                    crossWindowBlur = crossWindowBlur,
+                    liveSnapshot = liveSnapshot,
+                    onBlurRadiusChange = onBlurRadiusChange,
+                    onLiveSnapshotChange = { liveSnapshot = it },
                     onOpen = { kind ->
                         if (kind == OverlayKind.TranslucentActivity) {
                             context.startActivity(TranslucentOverlayActivity.intent(context, blurRadius))
@@ -62,7 +63,7 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
             if (tiles != null) {
                 Backdrop(
                     tiles = tiles,
-                    contentPadding = scaffoldPadding.inflated(BACKDROP_GUTTER),
+                    contentPadding = scaffoldPadding.inflated(TILE_SPACING),
                     shift = backdropShift,
                 )
             }
@@ -71,14 +72,14 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
         OverlayHost(
             kind = openKind,
             blurRadius = blurRadius,
-            liveSnapshot = isLiveSnapshot,
+            liveSnapshot = liveSnapshot,
             underlayState = underlayState,
             onViewSourceChange = { source -> viewDialogSource = source },
             onRefresh = {
                 backdropShift++
                 underlayState.refresh()
             },
-            onBlurRadiusChange = { radius -> blurRadiusDp = radius.value },
+            onBlurRadiusChange = onBlurRadiusChange,
             onDismiss = { openKind = null },
         )
     }
