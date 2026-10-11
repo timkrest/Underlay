@@ -38,12 +38,18 @@ fi
 
 tag="v$released"
 released_api=$(mktemp)
+trap 'rm -f "$released_api"' EXIT
 if ! git show "${tag}:underlay/api/underlay.api" > "$released_api" 2>/dev/null; then
   echo "$tag carries no API dump, nothing to compare against"
   exit 0
 fi
 
-removed=$(comm -13 <(sort underlay/api/underlay.api) <(sort "$released_api"))
+# Members are compared with their class, since two classes can declare the same member line.
+declarations() {
+  awk '/^\t/ { print owner " ::" $0; next } /^[^}]/ { owner = $0; print }' "$1" | sort
+}
+
+removed=$(comm -13 <(declarations underlay/api/underlay.api) <(declarations "$released_api"))
 if [ -z "$removed" ]; then
   echo "every declaration of $tag is still here"
   exit 0

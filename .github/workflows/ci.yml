@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -37,7 +37,7 @@ jobs:
       - name: Style
         run: ./gradlew ktlintCheck
 
-      - name: Licence headers
+      - name: License headers
         run: .github/scripts/check-license-headers.sh
 
       - name: Public API
@@ -53,7 +53,7 @@ jobs:
         run: ./gradlew :underlay:lintRelease :sample:lintDebug
 
       - name: Assemble
-        run: ./gradlew :underlay:assembleRelease :sample:assembleDebug
+        run: ./gradlew :underlay:assembleRelease :sample:assembleDebug :sample:assembleRelease
 
       - name: Upload reports
         if: failure()
@@ -64,7 +64,7 @@ jobs:
             **/build/reports/**
           retention-days: 7
 
-  # The levels that change behaviour: decorView.draw() below 26, PixelCopy from 26, FLAG_BLUR_BEHIND from 31.
+  # The levels that change behavior: decorView.draw() below 26, PixelCopy from 26, FLAG_BLUR_BEHIND from 31.
   instrumentation:
     runs-on: ubuntu-latest
     timeout-minutes: 60

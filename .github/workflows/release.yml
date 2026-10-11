@@ -61,6 +61,26 @@ jobs:
           fi
           echo "name=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Match the version, the changelog and main
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          declared=$(sed -n 's/^VERSION_NAME=//p' gradle.properties)
+          if [ "${VERSION%%-*}" != "$declared" ]; then
+            echo "::error::$VERSION does not match VERSION_NAME=$declared"
+            exit 1
+          fi
+          if [ "$VERSION" = "${VERSION%%-*}" ] && ! grep -qF "## [$VERSION] - " CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no ## [$VERSION] entry"
+            exit 1
+          fi
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::$(git rev-parse --short HEAD) is not on main"
+            exit 1
+          fi
+
       - name: Check
         run: ./gradlew ktlintCheck apiCheck :underlay:testDebugUnitTest :underlay:lintRelease
 
