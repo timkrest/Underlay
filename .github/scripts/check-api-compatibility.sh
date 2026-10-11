@@ -1,22 +1,16 @@
 #!/usr/bin/env bash
-# Guards the recorded API against what is already published: a declaration may leave the API, but
-# not without the version saying so. Before 1.0.0 a removal needs a minor bump, from 1.0.0 on a
-# major one. apiCheck only guards the dump against the code, which says nothing about releases.
+# Fails when a released declaration is gone without a minor bump (0.x) or a major one (1.0+).
 #
 # Usage: check-api-compatibility.sh <version>
 set -euo pipefail
 
 version=${1:?version to check}
 
-# Only x.y.z tags are candidates. A prerelease promises nothing, and `sort -V` puts 0.2.0 before
-# 0.2.0-rc1 - the opposite of semver - so leaving prereleases in would pick one over its own
-# release and compare against an API that was never published.
+# Releases only: sort -V puts 0.2.0 before 0.2.0-rc1.
 version_core=${version%%-*}
 head_commit=$(git rev-parse HEAD)
 
-# The newest release this version answers for: the highest tag that is not above it, so a patch to
-# an older series is compared against that series and not against a later minor release. A tag on
-# the commit being checked is the release being made, not a published one, so it is skipped.
+# The newest release not above this version. A tag on HEAD is the one being made.
 released=""
 while read -r candidate; do
   [ -n "$candidate" ] || continue
@@ -44,7 +38,7 @@ if ! git show "${tag}:underlay/api/underlay.api" > "$released_api" 2>/dev/null; 
   exit 0
 fi
 
-# Members are compared with their class, since two classes can declare the same member line.
+# Two classes can declare the same member line.
 declarations() {
   awk '/^\t/ { print owner " ::" $0; next } /^[^}]/ { owner = $0; print }' "$1" | sort
 }

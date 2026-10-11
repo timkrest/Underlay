@@ -32,7 +32,7 @@ dependencies {
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
-    // Compose ui-test resolves Espresso 3.5, which reflects on APIs Android 16 removed.
+    // ui-test brings Espresso 3.5, which breaks on Android 16.
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.coroutines.android)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

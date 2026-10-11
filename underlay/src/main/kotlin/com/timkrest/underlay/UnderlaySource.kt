@@ -3,40 +3,19 @@
 package com.timkrest.underlay
 
 /**
- * Where the underlay currently comes from.
- *
- * Reported through the `onSourceChange` callbacks of both `blurredUnderlay` functions, and read as
- * [UnderlayState.source] or [ViewUnderlay.source]. Later versions may add sources, so a `when` over
- * it should have an `else` branch.
+ * Where the underlay comes from. New sources may be added, so give a `when` an `else` branch.
  */
 public enum class UnderlaySource {
 
-    /**
-     * The system blurs whatever is behind the overlay window, via `FLAG_BLUR_BEHIND`. Needs API
-     * 31+, cross-window blur enabled by the system, and an overlay that owns a separate window.
-     * Only the tint is drawn on top.
-     */
+    /** `FLAG_BLUR_BEHIND` on the overlay window. Needs API 31+ and cross-window blur turned on. */
     SystemBlur,
 
-    /**
-     * A snapshot of the host window, blurred and drawn under the tint. Needs a host window that is
-     * not the overlay's own. A re-capture that fails keeps the snapshot already on screen, unless
-     * the host resized and it no longer fits - that one drops through [Pending] instead.
-     */
+    /** A blurred snapshot of the host window. A failed re-capture keeps the old one if it still fits. */
     Snapshot,
 
-    /**
-     * A snapshot is being captured and blurred. Only the tint is drawn, so the host window shows
-     * through clear until [Snapshot] takes over instead of the overlay flashing [Fallback]. Followed by
-     * [Snapshot], by [Fallback] if the capture fails, or by [SystemBlur] if the system turns
-     * cross-window blur back on.
-     */
+    /** A snapshot is on its way. Only the tint is drawn meanwhile. */
     Pending,
 
-    /**
-     * The solid fallback color is drawn. Reported when the caller is not in a window of its own -
-     * blurring the host would then mean blurring the overlay into its own backdrop - when there is
-     * no host window to capture, and when capturing it failed.
-     */
+    /** The fallback color: no window of its own, no host window, or the capture failed. */
     Fallback,
 }

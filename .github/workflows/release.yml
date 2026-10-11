@@ -38,9 +38,7 @@ jobs:
         with:
           validate-wrappers: true
 
-      # Both inputs are attacker-controlled. They reach the shell as environment variables so a
-      # quote cannot escape into the script, and the case checks the whole value at once - grep
-      # anchors per line and would pass a multi-line value on the strength of its first line.
+      # Untrusted input: pass it through env and match the whole value, not line by line.
       - name: Resolve version
         id: version
         env:
@@ -90,7 +88,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.name }}
         run: .github/scripts/check-api-compatibility.sh "$VERSION"
 
-      # publishToMavenCentral only uploads to staging; this one also releases.
+      # publishToMavenCentral stops at staging.
       - name: Publish
         env:
           ORG_GRADLE_PROJECT_VERSION_NAME: ${{ steps.version.outputs.name }}

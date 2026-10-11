@@ -11,12 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 
 /**
- * Handle on the underlay of one overlay: where it currently comes from, and a way to take a fresh
- * snapshot for content that moves underneath while the overlay stays open.
- *
- * Pass it to [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay]. Call [refresh]
- * whenever the host window has changed without resizing; resizes and configuration changes are
- * picked up on their own. Only [UnderlaySource.Snapshot] reads it, the system blur is live.
+ * The source of one overlay's underlay, and a way to retake its snapshot. Pass it to
+ * [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay].
  */
 @Stable
 public class UnderlayState {
@@ -24,17 +20,14 @@ public class UnderlayState {
     internal var refreshes: Int by mutableIntStateOf(0)
         private set
 
-    /**
-     * Where the underlay comes from, as Compose state. Null while no overlay carries this state:
-     * before it is shown and after it is dismissed.
-     */
+    /** Null while no overlay uses this state. */
     public var source: UnderlaySource? by mutableStateOf(null)
         private set
 
     private var reporter: Any? = null
 
     /**
-     * Captures the host window again on a following frame. The snapshot on screen stays until the new
+     * Retakes the snapshot after the host changed without resizing. The old one stays until the new
      * one is ready.
      */
     public fun refresh() {

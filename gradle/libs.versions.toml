@@ -18,11 +18,9 @@ androidMinSdk = "23"
 androidCompileSdk = "36"
 androidTargetSdk = "36"
 
-# Run Gradle on JDK 21 and publish Java 11 bytecode.
 jvmToolchain = "21"
 jvmTarget = "11"
-# Compile with the latest Kotlin, but emit metadata and depend on a stdlib that consumers on
-# Kotlin 2.2 and AGP 8.x can read. The dependencies need nothing newer.
+# Readable by consumers on Kotlin 2.2 and AGP 8.x.
 kotlinStdlib = "2.2.20"
 
 [libraries]
@@ -48,7 +46,7 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 
-# Dependencies of the convention plugins in build-logic.
+# build-logic
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 mavenPublish-gradlePlugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }

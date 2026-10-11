@@ -20,26 +20,19 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 
 /**
- * Makes the window underneath this view's window, blurred, the background of this view.
+ * Makes the window under this view's window, blurred, the background of this view.
  *
- * The View counterpart of [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay], for
- * overlays built from Views: an `android.app.Dialog`, a `DialogFragment`, a `BottomSheetDialog`, a
- * `PopupWindow`. It picks its source the same way, see [UnderlaySource].
+ * The View version of [blurredUnderlay][androidx.compose.ui.Modifier.blurredUnderlay], for an
+ * `android.app.Dialog`, a `DialogFragment`, a `BottomSheetDialog` or a `PopupWindow`. Call it on the
+ * root of your own layout, not on a `decorView` or a bottom sheet. It keeps the old background's
+ * outline and padding, so set `clipToOutline` for rounded corners. [ViewUnderlay.remove] or a new
+ * background takes it off.
  *
- * The underlay takes the background slot of this view until [ViewUnderlay.remove] puts the previous
- * background back. It reports the previous background's outline and padding, so set
- * `clipToOutline` for rounded corners. Call it on a view of your own, such as the root of the
- * overlay's layout, not on one whose background something else manages, like a `decorView` or the
- * sheet of a `BottomSheetDialog`. Calling it again on the same view replaces the underlay, and setting
- * another background on the view removes it.
- *
- * @param blurRadius blur radius in pixels, the same value `Modifier.blur` and `blurBehindRadius` take.
- * @param tint drawn over the blurred content, usually a translucent black or white.
- * @param fallback solid color drawn when no blur is available at all.
- * @param liveSnapshot capture the host window again every time it draws. See
- *   [ViewUnderlay.liveSnapshot].
- * @param onSourceChange called whenever the active [UnderlaySource] changes, never before this
- *   function has returned.
+ * @param blurRadius in pixels, the same value `Modifier.blur` and `blurBehindRadius` take.
+ * @param tint drawn over the blur.
+ * @param fallback drawn when there is nothing to blur.
+ * @param liveSnapshot see [ViewUnderlay.liveSnapshot].
+ * @param onSourceChange called when the [UnderlaySource] changes, never before this function returns.
  */
 @MainThread
 @JvmOverloads
@@ -55,10 +48,7 @@ public fun View.blurredUnderlay(
     return ViewUnderlay(this, blurRadius, tint, fallback, liveSnapshot, onSourceChange)
 }
 
-/**
- * Handle on the underlay [blurredUnderlay][android.view.View.blurredUnderlay] installed on a view.
- * Every member is to be used from the main thread.
- */
+/** The underlay [blurredUnderlay][android.view.View.blurredUnderlay] put on a view. Main thread only. */
 @MainThread
 public class ViewUnderlay internal constructor(
     private val view: View,
@@ -69,7 +59,7 @@ public class ViewUnderlay internal constructor(
     onSourceChange: OnSourceChangeListener?,
 ) {
 
-    /** Called whenever the active [UnderlaySource] changes. */
+    /** Called when the [UnderlaySource] changes. */
     public fun interface OnSourceChangeListener {
         public fun onSourceChange(source: UnderlaySource)
     }
@@ -95,7 +85,7 @@ public class ViewUnderlay internal constructor(
         true
     }
 
-    /** Blur radius in pixels, the same value `Modifier.blur` and `blurBehindRadius` take. */
+    /** In pixels, the same value `Modifier.blur` and `blurBehindRadius` take. */
     @get:Px
     public var blurRadius: Float = blurRadius
         set(@Px value) {
@@ -103,7 +93,7 @@ public class ViewUnderlay internal constructor(
             binding?.controller?.setRadius(BlurRadius.ofPx(value))
         }
 
-    /** Drawn over the blurred content. */
+    /** Drawn over the blur. */
     @get:ColorInt
     public var tint: Int
         get() = drawable.tintColor
@@ -111,7 +101,7 @@ public class ViewUnderlay internal constructor(
             drawable.tintColor = value
         }
 
-    /** Drawn when no blur is available at all. */
+    /** Drawn when there is nothing to blur. */
     @get:ColorInt
     public var fallback: Int
         get() = drawable.fallbackColor
@@ -119,21 +109,17 @@ public class ViewUnderlay internal constructor(
             drawable.fallbackColor = value
         }
 
-    /**
-     * Capture the host window again every time it draws, so the snapshot follows content that moves
-     * underneath a couple of frames behind. It costs a capture and a blur per host frame; below API 26
-     * the capture redraws the host in software. The system blur ignores it.
-     */
+    /** Capture the host again on every host frame. Costs a capture and a blur each time. */
     public var liveSnapshot: Boolean = liveSnapshot
         set(value) {
             field = value
             binding?.controller?.setLive(value)
         }
 
-    /** Called whenever the active [UnderlaySource] changes. */
+    /** Called when the [UnderlaySource] changes. */
     public var onSourceChange: OnSourceChangeListener? = onSourceChange
 
-    /** Where the underlay comes from. Null while the view is not attached to a window, or removed. */
+    /** Null while the view is detached or the underlay removed. */
     public var source: UnderlaySource? = null
         private set
 
@@ -146,14 +132,14 @@ public class ViewUnderlay internal constructor(
     }
 
     /**
-     * Captures the host window again. The snapshot on screen stays until the new one is ready. Call it
-     * when the host changed without resizing, a configuration change it handles itself included.
+     * Retakes the snapshot after the host changed without resizing, a handled configuration change
+     * included. The old one stays until the new one is ready.
      */
     public fun refresh() {
         binding?.controller?.recapture()
     }
 
-    /** Takes the underlay off the view and puts back the background it had before. */
+    /** Takes the underlay off and puts the old background back. */
     public fun remove() {
         if (isRemoved) return
         isRemoved = true

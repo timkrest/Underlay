@@ -9,28 +9,18 @@ import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Dp
 
 /**
- * Draws the window underneath this composable's window, blurred, behind the composable.
+ * Draws the window under this overlay's window, blurred, behind this composable.
  *
- * For overlays in their own window - a [androidx.compose.ui.window.Dialog], a
- * [androidx.compose.ui.window.Popup], a translucent activity - whose backdrop belongs to another
- * window that in-window blur libraries cannot reach. The blur comes from the best source the device
- * offers, see [UnderlaySource]; outside a window of its own the composable draws [fallback] only.
+ * For a [androidx.compose.ui.window.Dialog], a [androidx.compose.ui.window.Popup] or a translucent
+ * activity. Apply it once per window, to a composable that fills it: the system blur covers the whole
+ * window, a snapshot only this composable. The snapshot is always of the activity window.
  *
- * The system blurs everything behind the overlay window, a snapshot only what is behind this
- * composable: apply the modifier once per window, to a composable that fills it, for the same
- * picture from both. The snapshot is always taken of the activity window, so under a dialog over a
- * dialog it shows the activity, not the dialog in between.
- *
- * @param blurRadius blur radius, the same value `Modifier.blur` and `blurBehindRadius` take.
- * @param tint drawn over the blurred content, usually a translucent black or white.
- * @param fallback solid color drawn when no blur is available at all.
- * @param liveSnapshot capture the host window again every time it draws, so the snapshot follows
- *   content moving underneath a couple of frames behind, at a capture and a blur per host frame; below
- *   API 26 the capture redraws the host in software. The system blur is live on its own and ignores
- *   it.
- * @param state exposes the active [UnderlaySource] as Compose state and captures the host window
- *   again on [UnderlayState.refresh].
- * @param onSourceChange called whenever the active [UnderlaySource] changes.
+ * @param blurRadius the same value `Modifier.blur` and `blurBehindRadius` take.
+ * @param tint drawn over the blur.
+ * @param fallback drawn when there is nothing to blur.
+ * @param liveSnapshot capture the host again on every host frame. Costs a capture and a blur each time.
+ * @param state the current [UnderlaySource] as Compose state, and [UnderlayState.refresh].
+ * @param onSourceChange called when the [UnderlaySource] changes.
  */
 public fun Modifier.blurredUnderlay(
     blurRadius: Dp,
