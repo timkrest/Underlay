@@ -30,9 +30,10 @@ jobs:
               distribution: temurin
               java-version: 21
           - uses: android-actions/setup-android@v4
-          - uses: gradle/actions/setup-gradle@v6
-            with:
-              validate-wrappers: true
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          validate-wrappers: true
 
       - name: Style
         run: ./gradlew ktlintCheck
@@ -90,15 +91,16 @@ jobs:
               distribution: temurin
               java-version: 21
           - uses: android-actions/setup-android@v4
-          - uses: gradle/actions/setup-gradle@v6
-            with:
-              validate-wrappers: true
           - name: Enable KVM
             run: |
               echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
                 | sudo tee /etc/udev/rules.d/99-kvm4all.rules
               sudo udevadm control --reload-rules
               sudo udevadm trigger --name-match=kvm
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          validate-wrappers: true
 
       - name: Instrumentation tests on API ${{ matrix.api-level }}
         uses: reactivecircus/android-emulator-runner@v2

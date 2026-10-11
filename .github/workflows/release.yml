@@ -33,9 +33,10 @@ jobs:
               distribution: temurin
               java-version: 21
           - uses: android-actions/setup-android@v4
-          - uses: gradle/actions/setup-gradle@v6
-            with:
-              validate-wrappers: true
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          validate-wrappers: true
 
       # Untrusted input: pass it through env and match the whole value, not line by line.
       - name: Resolve version
