@@ -1,8 +1,7 @@
 // Copyright 2026 Timofey Krestyanov
 // SPDX-License-Identifier: Apache-2.0
-package com.timkrest.underlay
+package com.timkrest.underlay.blur
 
-import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,10 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsContext
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.core.graphics.createBitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.underlay.pixelAt
+import com.timkrest.underlay.window.captureInto
+import com.timkrest.underlay.window.createCaptureBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -89,19 +92,19 @@ class SnapshotBlurTest {
             val window = compose.activity.window
             val capture = assertNotNull(window.createCaptureBitmap(), "the host window is not drawable")
             assertTrue(window.captureInto(capture), "the host window could not be captured")
-            val blur = snapshotBlur(graphicsContext)
+            val blur = SnapshotBlur.bestAvailable { graphicsContext }
             try {
-                blur.blur(capture, SIGMA)
+                blur.blur(capture.asImageBitmap(), SIGMA)
             } finally {
                 blur.release()
             }
         }
     }
 
-    private fun halves(): Bitmap {
+    private fun halves(): ImageBitmap {
         val pixels = IntArray(SIZE * SIZE) { if (it % SIZE < SIZE / 2) OPAQUE_RED else OPAQUE_BLUE }
 
-        return createBitmap(SIZE, SIZE).apply { setPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE) }
+        return createBitmap(SIZE, SIZE).apply { setPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE) }.asImageBitmap()
     }
 
     private companion object {

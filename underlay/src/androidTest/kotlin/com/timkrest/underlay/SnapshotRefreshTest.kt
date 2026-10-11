@@ -18,8 +18,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.Popup
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Rule
@@ -45,23 +43,14 @@ class SnapshotRefreshTest {
     @Volatile
     private var hostOnScreen: Offset? = null
 
-    private val popup: Overlay = { content -> Popup { content() } }
-
-    private val undimmedDialog: Overlay = { content ->
-        Dialog(onDismissRequest = {}) {
-            DropTheWindowDim()
-            content()
-        }
-    }
-
     @After
     fun letTheSystemBlurAgain() = compose.restoreTheSystemBlur()
 
     @Test
-    fun aRefreshUnderAPopupBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(popup)
+    fun aRefreshUnderAPopupBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(inPopup)
 
     @Test
-    fun aRefreshUnderADialogBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(undimmedDialog)
+    fun aRefreshUnderADialogBringsTheHostWindowBackFresh() = assertARefreshBringsTheHostWindowBack(inUndimmedDialog)
 
     private fun assertARefreshBringsTheHostWindowBack(overlay: Overlay) {
         compose.takeTheSystemBlurOutOfTheLadder()
@@ -82,7 +71,6 @@ class SnapshotRefreshTest {
         assertTheHostMovedOnWithout(itsSnapshot = Color.Blue)
     }
 
-    /** Until the overlay window draws the snapshot it has reported, the host shows through the tint in its place. */
     private fun assertTheHostMovedOnWithout(itsSnapshot: Color) {
         val frozen = itsSnapshot.tinted(TINT)
         compose.awaitOrFail({ "no $frozen backdrop at ${backdropProbe()} with a $hostColor host, ${state()}" }) {

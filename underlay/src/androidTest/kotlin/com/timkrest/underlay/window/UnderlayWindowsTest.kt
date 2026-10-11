@@ -1,6 +1,6 @@
 // Copyright 2026 Timofey Krestyanov
 // SPDX-License-Identifier: Apache-2.0
-package com.timkrest.underlay
+package com.timkrest.underlay.window
 
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -64,7 +64,7 @@ class UnderlayWindowsTest {
     }
 
     @Composable
-    private fun underlayWindows(): UnderlayWindows = resolveUnderlayWindows(
+    private fun underlayWindows(): UnderlayWindows = UnderlayWindows.resolve(
         view = LocalView.current,
         activity = LocalActivity.current,
         windowManager = LocalContext.current.getSystemService<WindowManager>(),

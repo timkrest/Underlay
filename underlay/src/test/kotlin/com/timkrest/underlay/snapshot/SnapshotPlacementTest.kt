@@ -1,6 +1,6 @@
 // Copyright 2026 Timofey Krestyanov
 // SPDX-License-Identifier: Apache-2.0
-package com.timkrest.underlay
+package com.timkrest.underlay.snapshot
 
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -44,7 +44,7 @@ class SnapshotPlacementTest {
 
         assertEquals(2, placement.source.width, "host pixels 3 to 7 span two snapshot pixels")
         assertEquals(IntOffset(x = -3, y = 0), placement.destination.topLeft, "the extra pixel is drawn where it was captured")
-        assertEquals(placement.source.width * WINDOW_CAPTURE_DOWN_SCALE, placement.destination.width)
+        assertEquals(placement.source.width * CaptureScale.DOWNSCALE, placement.destination.width)
     }
 
     @Test
@@ -81,13 +81,13 @@ class SnapshotPlacementTest {
     @Test
     fun `a host width that is not a multiple of the capture factor stays inside the snapshot`() {
         val hostWidth = 4 * 270 + 2
-        val snapshot = IntSize(width = snapshotPixelsFloor(hostWidth), height = snapshotPixelsFloor(800))
+        val snapshot = IntSize(width = CaptureScale.snapshotFloor(hostWidth), height = CaptureScale.snapshotFloor(800))
 
         val placement = placementIn(snapshot = snapshot, origin = IntOffset.Zero, size = IntSize(hostWidth, 800))
 
         assertEquals(snapshot.width, placement.source.right, "the placement must reach the snapshot's last column")
         assertEquals(
-            placement.source.width * WINDOW_CAPTURE_DOWN_SCALE,
+            placement.source.width * CaptureScale.DOWNSCALE,
             placement.destination.width,
             "the snapshot must not be stretched to cover the host pixels it never captured",
         )
@@ -95,7 +95,7 @@ class SnapshotPlacementTest {
 
     @Test
     fun `a composable entirely off the snapshot draws nothing`() {
-        val placement = snapshotPlacement(
+        val placement = SnapshotPlacement.of(
             originInHost = IntOffset(x = 10_000, y = 10_000),
             size = IntSize(width = 100, height = 100),
             snapshot = snapshotOf(hostWidth = 400, hostHeight = 800),
@@ -109,12 +109,12 @@ class SnapshotPlacementTest {
 
     private fun placementIn(snapshot: IntSize, origin: IntOffset, size: IntSize): SnapshotPlacement =
         assertNotNull(
-            snapshotPlacement(originInHost = origin, size = size, snapshot = snapshot),
+            SnapshotPlacement.of(originInHost = origin, size = size, snapshot = snapshot),
             "the composable overlaps the host window",
         )
 
     private fun snapshotOf(hostWidth: Int, hostHeight: Int): IntSize = IntSize(
-        width = hostWidth / WINDOW_CAPTURE_DOWN_SCALE,
-        height = hostHeight / WINDOW_CAPTURE_DOWN_SCALE,
+        width = hostWidth / CaptureScale.DOWNSCALE,
+        height = hostHeight / CaptureScale.DOWNSCALE,
     )
 }

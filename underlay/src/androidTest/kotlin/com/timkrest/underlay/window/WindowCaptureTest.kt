@@ -1,6 +1,6 @@
 // Copyright 2026 Timofey Krestyanov
 // SPDX-License-Identifier: Apache-2.0
-package com.timkrest.underlay
+package com.timkrest.underlay.window
 
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.timkrest.underlay.snapshot.CaptureScale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -52,11 +53,11 @@ class WindowCaptureTest {
     }
 
     private fun assertExactDownscale(hostPixels: Int, snapshotPixels: Int, side: String) {
-        val covered = snapshotPixels * WINDOW_CAPTURE_DOWN_SCALE
+        val covered = snapshotPixels * CaptureScale.DOWNSCALE
 
         assertTrue(covered <= hostPixels, "$side: the snapshot claims $covered of $hostPixels host pixels")
         assertTrue(
-            hostPixels - covered < WINDOW_CAPTURE_DOWN_SCALE,
+            hostPixels - covered < CaptureScale.DOWNSCALE,
             "$side: another snapshot pixel would have fit, ${hostPixels - covered} host pixels are uncovered",
         )
     }

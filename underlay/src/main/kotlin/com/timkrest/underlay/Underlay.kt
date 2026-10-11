@@ -9,39 +9,26 @@ import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Dp
 
 /**
- * Draws the content of the window underneath this one, blurred, behind the composable.
+ * Draws the window underneath this composable's window, blurred, behind the composable.
  *
- * For overlays that live in their own window - a [androidx.compose.ui.window.Dialog], a
- * [androidx.compose.ui.window.Popup], a translucent activity - where the content to blur belongs to
- * another window and in-window blur libraries cannot reach it.
- *
- * The blur comes from the best source the device offers: the system blurs behind the overlay window
- * on API 31+, a blurred snapshot of the host window otherwise, and [fallback] when neither works.
- * See [UnderlaySource]. The snapshot is taken again when the host window changes size or
- * configuration, whenever [UnderlayState.refresh] is called on [state], and with [liveSnapshot]
- * every time the host window draws.
- *
- * In a composable that is not in a window of its own it draws [fallback] and nothing else: the host
- * window would then be this composable's own window, and blurring it would fold the overlay into
- * its own backdrop. Use an in-window blur library for that case.
+ * For overlays in their own window - a [androidx.compose.ui.window.Dialog], a
+ * [androidx.compose.ui.window.Popup], a translucent activity - whose backdrop belongs to another
+ * window that in-window blur libraries cannot reach. The blur comes from the best source the device
+ * offers, see [UnderlaySource]; outside a window of its own the composable draws [fallback] only.
  *
  * The system blurs everything behind the overlay window, a snapshot only what is behind this
- * composable. Apply the modifier to a composable that fills the overlay window to get the same
- * picture from both, and apply it once per window: two of them fight over the flag and the radius.
+ * composable: apply the modifier once per window, to a composable that fills it, for the same
+ * picture from both.
  *
- * @param blurRadius blur strength, read as the standard deviation of a Gaussian - the same meaning
- *   design tools and `RenderEffect.createBlurEffect` give it.
+ * @param blurRadius blur strength, read as the standard deviation of a Gaussian.
  * @param tint drawn over the blurred content, usually a translucent black or white.
  * @param fallback solid color drawn when no blur is available at all.
  * @param liveSnapshot capture the host window again every time it draws, so the snapshot follows
- *   content that moves underneath, such as a list scrolling under a popup. One capture is in flight
- *   at a time and the next starts when it lands, so the backdrop trails the host by a couple of
- *   frames and costs a `PixelCopy` and a blur per host frame for as long as the host keeps drawing.
- *   Off by default. The system blur is live on its own and ignores it.
- * @param state handle on this underlay: exposes the active [UnderlaySource] as Compose state and
- *   takes a fresh snapshot of the host window on [UnderlayState.refresh], for content that moves
- *   underneath a long-lived overlay. The system blur is live and ignores the refresh.
- * @param onSourceChange called whenever the active [UnderlaySource] changes, for diagnostics.
+ *   content moving underneath a couple of frames behind, at a `PixelCopy` and a blur per host frame.
+ *   The system blur is live on its own and ignores it.
+ * @param state exposes the active [UnderlaySource] as Compose state and captures the host window
+ *   again on [UnderlayState.refresh].
+ * @param onSourceChange called whenever the active [UnderlaySource] changes.
  */
 public fun Modifier.blurredUnderlay(
     blurRadius: Dp,

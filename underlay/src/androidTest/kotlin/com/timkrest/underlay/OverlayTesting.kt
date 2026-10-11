@@ -9,14 +9,26 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.compose.ui.window.Popup
 import androidx.core.content.getSystemService
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.FileInputStream
 
 internal typealias Overlay = @Composable (content: @Composable () -> Unit) -> Unit
 
-/** A Dialog dims the host behind it; a test that reads the host's color through the backdrop cannot have that. */
+internal val inDialog: Overlay = { content -> Dialog(onDismissRequest = {}) { content() } }
+
+internal val inUndimmedDialog: Overlay = { content ->
+    Dialog(onDismissRequest = {}) {
+        DropTheWindowDim()
+        content()
+    }
+}
+
+internal val inPopup: Overlay = { content -> Popup { content() } }
+
 @Composable
 internal fun DropTheWindowDim() {
     val window = (LocalView.current.parent as? DialogWindowProvider)?.window

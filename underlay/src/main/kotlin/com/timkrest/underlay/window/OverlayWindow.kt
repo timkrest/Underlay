@@ -1,6 +1,6 @@
 // Copyright 2026 Timofey Krestyanov
 // SPDX-License-Identifier: Apache-2.0
-package com.timkrest.underlay
+package com.timkrest.underlay.window
 
 import android.os.Build
 import android.view.View
@@ -11,15 +11,15 @@ import androidx.annotation.RequiresApi
 internal sealed interface OverlayWindow {
 
     @RequiresApi(Build.VERSION_CODES.S)
-    fun takesBlurBehind(radiusPx: Int): Boolean
+    fun applyBlurBehind(radiusPx: Int): Boolean
 
     @RequiresApi(Build.VERSION_CODES.S)
-    fun dropsBlurBehind(): Boolean
+    fun clearBlurBehind()
 
     data class OfWindow(private val window: Window) : OverlayWindow {
 
         @RequiresApi(Build.VERSION_CODES.S)
-        override fun takesBlurBehind(radiusPx: Int): Boolean {
+        override fun applyBlurBehind(radiusPx: Int): Boolean {
             window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
             window.attributes = window.attributes.apply { blurBehindRadius = radiusPx }
 
@@ -27,26 +27,26 @@ internal sealed interface OverlayWindow {
         }
 
         @RequiresApi(Build.VERSION_CODES.S)
-        override fun dropsBlurBehind(): Boolean {
+        override fun clearBlurBehind() {
             window.clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
             window.attributes = window.attributes.apply { blurBehindRadius = 0 }
-
-            return true
         }
     }
 
     data class OfRootView(private val rootView: View, private val windowManager: WindowManager) : OverlayWindow {
 
         @RequiresApi(Build.VERSION_CODES.S)
-        override fun takesBlurBehind(radiusPx: Int): Boolean = updateLayoutParams {
+        override fun applyBlurBehind(radiusPx: Int): Boolean = updateLayoutParams {
             flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
             blurBehindRadius = radiusPx
         }
 
         @RequiresApi(Build.VERSION_CODES.S)
-        override fun dropsBlurBehind(): Boolean = updateLayoutParams {
-            flags = flags and WindowManager.LayoutParams.FLAG_BLUR_BEHIND.inv()
-            blurBehindRadius = 0
+        override fun clearBlurBehind() {
+            updateLayoutParams {
+                flags = flags and WindowManager.LayoutParams.FLAG_BLUR_BEHIND.inv()
+                blurBehindRadius = 0
+            }
         }
 
         private inline fun updateLayoutParams(block: WindowManager.LayoutParams.() -> Unit): Boolean {

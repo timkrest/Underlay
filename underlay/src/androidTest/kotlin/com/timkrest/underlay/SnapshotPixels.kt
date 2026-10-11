@@ -37,7 +37,6 @@ internal fun Color.matches(other: Color): Boolean =
         abs(green - other.green) <= CHANNEL_TOLERANCE &&
         abs(blue - other.blue) <= CHANNEL_TOLERANCE
 
-/** What this color looks like on screen under a translucent [tint]. */
 internal fun Color.tinted(tint: Color): Color = Color(
     red = tint.red * tint.alpha + red * (1f - tint.alpha),
     green = tint.green * tint.alpha + green * (1f - tint.alpha),

@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 recorded in [`underlay/api/underlay.api`](underlay/api/underlay.api) — may change in any minor
 version.
 
+## [Unreleased]
+
+### Added
+
+- `View.blurredUnderlay` and `ViewUnderlay` for overlays built from Views: `android.app.Dialog`,
+  `DialogFragment`, `BottomSheetDialog`, `PopupWindow`. The underlay becomes the view's background
+  until `remove()`. The radius is in pixels.
+- The first snapshot fades in over 200 ms. With animations off it appears at once.
+
+### Changed
+
+- A radius change during a blur is applied after that blur. On the CPU the old blur kept running
+  next to the new one.
+- The CPU blur reuses its buffers between frames.
+- A negative or non-finite `blurRadius` means no blur.
+- `:sample` opens a Material 3 `ModalBottomSheet` and a `Dialog` built from Views.
+
+### Fixed
+
+- An overlay that moved without redrawing, such as a dragged bottom sheet, kept the snapshot in the
+  old place.
+
 ## [0.4.0] - 2026-09-12
 
 ### Added

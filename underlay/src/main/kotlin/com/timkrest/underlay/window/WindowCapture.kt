@@ -1,6 +1,6 @@
 // Copyright 2026 Timofey Krestyanov
 // SPDX-License-Identifier: Apache-2.0
-package com.timkrest.underlay
+package com.timkrest.underlay.window
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -9,42 +9,32 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.view.Choreographer
 import android.view.PixelCopy
 import android.view.View
 import android.view.Window
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withSave
+import com.timkrest.underlay.snapshot.CaptureScale
+import com.timkrest.underlay.snapshot.HostCapture
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
-internal const val WINDOW_CAPTURE_DOWN_SCALE = 4
-
 private const val CAPTURE_ATTEMPTS = 3
 
-internal suspend fun Window.captureOnFrameBoundary(): Bitmap? {
-    repeat(CAPTURE_ATTEMPTS) {
-        awaitDrawnFrame()
-        val destination = createCaptureBitmap()
-        if (destination != null && captureInto(destination)) return destination
+internal class WindowCapture(private val window: Window) : HostCapture {
+
+    override suspend fun capture(): ImageBitmap? {
+        repeat(CAPTURE_ATTEMPTS) {
+            awaitDrawnFrame()
+            val destination = window.createCaptureBitmap()
+            if (destination != null && window.captureInto(destination)) return destination.asImageBitmap()
+        }
+
+        return null
     }
-
-    return null
-}
-
-private suspend fun awaitDrawnFrame() {
-    withFrameNanos { }
-    awaitVsync()
-}
-
-private suspend fun awaitVsync(): Unit = suspendCancellableCoroutine { continuation ->
-    val choreographer = Choreographer.getInstance()
-    val callback = Choreographer.FrameCallback { continuation.resume(Unit) }
-
-    choreographer.postFrameCallback(callback)
-    continuation.invokeOnCancellation { choreographer.removeFrameCallback(callback) }
 }
 
 internal fun Window.createCaptureBitmap(): Bitmap? {
@@ -52,8 +42,8 @@ internal fun Window.createCaptureBitmap(): Bitmap? {
     if (!view.isDrawable()) return null
 
     return createBitmap(
-        width = snapshotPixelsFloor(view.width).coerceAtLeast(1),
-        height = snapshotPixelsFloor(view.height).coerceAtLeast(1),
+        width = CaptureScale.snapshotFloor(view.width).coerceAtLeast(1),
+        height = CaptureScale.snapshotFloor(view.height).coerceAtLeast(1),
     )
 }
 
@@ -79,24 +69,25 @@ private suspend fun Window.requestPixelCopy(destination: Bitmap): Boolean =
     suspendCancellableCoroutine { continuation ->
         PixelCopy.request(
             this,
-            hostPixelsCaptured(destination),
+            hostPixelsCapturedInto(destination),
             destination,
             { result -> continuation.resume(result == PixelCopy.SUCCESS) },
             Handler(Looper.getMainLooper()),
         )
     }
 
-private fun hostPixelsCaptured(destination: Bitmap) = Rect(
+private fun hostPixelsCapturedInto(destination: Bitmap) = Rect(
     0,
     0,
-    destination.width * WINDOW_CAPTURE_DOWN_SCALE,
-    destination.height * WINDOW_CAPTURE_DOWN_SCALE,
+    CaptureScale.hostPixels(destination.width),
+    CaptureScale.hostPixels(destination.height),
 )
 
 private fun View.drawScaledInto(destination: Bitmap): Boolean = try {
     destination.eraseColor(Color.TRANSPARENT)
     Canvas(destination).withSave {
-        scale(1f / WINDOW_CAPTURE_DOWN_SCALE, 1f / WINDOW_CAPTURE_DOWN_SCALE)
+        val scale = 1f / CaptureScale.DOWNSCALE
+        scale(scale, scale)
         draw(this)
     }
     true

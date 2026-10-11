@@ -16,8 +16,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.Popup
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Rule
@@ -38,23 +36,14 @@ class LiveSnapshotTest {
     @Volatile
     private var backdropOnScreen: Offset? = null
 
-    private val popup: Overlay = { content -> Popup { content() } }
-
-    private val undimmedDialog: Overlay = { content ->
-        Dialog(onDismissRequest = {}) {
-            DropTheWindowDim()
-            content()
-        }
-    }
-
     @After
     fun letTheSystemBlurAgain() = compose.restoreTheSystemBlur()
 
     @Test
-    fun aLiveSnapshotUnderAPopupFollowsTheHostWithoutARefresh() = assertTheSnapshotFollowsTheHost(popup)
+    fun aLiveSnapshotUnderAPopupFollowsTheHostWithoutARefresh() = assertTheSnapshotFollowsTheHost(inPopup)
 
     @Test
-    fun aLiveSnapshotUnderADialogFollowsTheHostWithoutARefresh() = assertTheSnapshotFollowsTheHost(undimmedDialog)
+    fun aLiveSnapshotUnderADialogFollowsTheHostWithoutARefresh() = assertTheSnapshotFollowsTheHost(inUndimmedDialog)
 
     private fun assertTheSnapshotFollowsTheHost(overlay: Overlay) {
         compose.takeTheSystemBlurOutOfTheLadder()
