@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Every Kotlin source and build script carries an SPDX header.
-#
-# Usage: check-license-headers.sh
 set -euo pipefail
 
 marker="SPDX-License-Identifier: Apache-2.0"

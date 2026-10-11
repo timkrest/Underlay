@@ -69,7 +69,6 @@ internal class CanvasSnapshotPainter {
     private fun IntRect.copyInto(rect: Rect) = rect.set(left, top, right, bottom)
 }
 
-// ponytail: a software canvas reads the GPU snapshot back on every draw; cache the copy per snapshot if a software layer shows up in a profile
 private fun ImageBitmap.drawableOn(canvas: Canvas): ImageBitmap? {
     if (canvas.isHardwareAccelerated || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return this
     val bitmap = asAndroidBitmap()
