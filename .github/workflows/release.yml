@@ -13,7 +13,11 @@ permissions:
   contents: read
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   publish:
+    needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: maven-central
@@ -80,9 +84,6 @@ jobs:
             echo "::error::$(git rev-parse --short HEAD) is not on main"
             exit 1
           fi
-
-      - name: Check
-        run: ./gradlew ktlintCheck apiCheck :underlay:testDebugUnitTest :underlay:lintRelease
 
       - name: Compatibility with the last release
         env:

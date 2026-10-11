@@ -21,6 +21,9 @@ androidTargetSdk = "36"
 # Run Gradle on JDK 21 and publish Java 11 bytecode.
 jvmToolchain = "21"
 jvmTarget = "11"
+# Compile with the latest Kotlin, but emit metadata and depend on a stdlib that consumers on
+# Kotlin 2.2 and AGP 8.x can read. The dependencies need nothing newer.
+kotlinStdlib = "2.2.20"
 
 [libraries]
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }

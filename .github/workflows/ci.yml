@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -52,8 +53,15 @@ jobs:
       - name: Android Lint
         run: ./gradlew :underlay:lintRelease :sample:lintDebug
 
+      # D8 and R8 only warn when they cannot read Kotlin metadata, and the build still passes.
       - name: Assemble
-        run: ./gradlew :underlay:assembleRelease :sample:assembleDebug :sample:assembleRelease
+        run: |
+          set -o pipefail
+          ./gradlew :underlay:assembleRelease :sample:assembleDebug :sample:assembleRelease 2>&1 | tee assemble.log
+          if grep -qi 'kotlin metadata' assemble.log; then
+            echo "::error::D8 or R8 cannot read the Kotlin metadata, see kotlinStdlib in gradle/libs.versions.toml"
+            exit 1
+          fi
 
       - name: Upload reports
         if: failure()
@@ -64,7 +72,8 @@ jobs:
             **/build/reports/**
           retention-days: 7
 
-  # The levels that change behavior: decorView.draw() below 26, PixelCopy from 26, FLAG_BLUR_BEHIND from 31.
+  # The levels that change behavior: decorView.draw() below 26, PixelCopy from 26, FLAG_BLUR_BEHIND from 31,
+  # and the newest one.
   instrumentation:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -72,7 +81,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api-level: [23, 26, 28, 31, 34]
+        api-level: [23, 26, 28, 31, 34, 36]
 
     steps:
       - uses: actions/checkout@v7

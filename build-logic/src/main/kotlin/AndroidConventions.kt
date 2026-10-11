@@ -8,6 +8,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 internal val Project.libs: VersionCatalog
     get() = extensions.getByType<VersionCatalogsExtension>().named("libs")
@@ -46,7 +47,12 @@ internal fun CommonExtension<*, *, *, *, *, *>.applyUnderlayDefaults(libs: Versi
 
 internal fun KotlinAndroidProjectExtension.applyUnderlayDefaults(libs: VersionCatalog) {
     jvmToolchain(libs.int("jvmToolchain"))
+    val stdlib = libs.version("kotlinStdlib")
+    coreLibrariesVersion = stdlib
     compilerOptions {
         jvmTarget.set(JvmTarget.fromTarget(libs.javaTarget.toString()))
+        val kotlinTarget = KotlinVersion.fromVersion(stdlib.substringBeforeLast('.'))
+        languageVersion.set(kotlinTarget)
+        apiVersion.set(kotlinTarget)
     }
 }
