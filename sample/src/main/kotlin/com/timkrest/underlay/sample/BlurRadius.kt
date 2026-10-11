@@ -5,6 +5,7 @@ package com.timkrest.underlay.sample
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -23,4 +24,12 @@ internal fun BlurRadiusSlider(
         modifier = modifier,
         valueRange = 0f..MAX_BLUR_RADIUS.value,
     )
+}
+
+@Preview
+@Composable
+private fun BlurRadiusSliderPreview() {
+    SampleTheme {
+        BlurRadiusSlider(blurRadius = DEFAULT_BLUR_RADIUS, onBlurRadiusChange = { })
+    }
 }

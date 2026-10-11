@@ -16,6 +16,18 @@ internal enum class OverlayKind(val label: String, val explanation: String, val 
         hasHostWindow = true,
     ),
 
+    BottomSheet(
+        label = "Bottom sheet",
+        explanation = "Material 3 ModalBottomSheet. Own window, host window available. Drag it: the snapshot stays in place.",
+        hasHostWindow = true,
+    ),
+
+    ViewDialog(
+        label = "View dialog",
+        explanation = "android.app.Dialog built from Views, backed by View.blurredUnderlay. Host window available.",
+        hasHostWindow = true,
+    ),
+
     TranslucentActivity(
         label = "Translucent",
         explanation = "Own window. No host window to capture.",

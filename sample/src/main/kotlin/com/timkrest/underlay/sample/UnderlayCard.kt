@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -25,9 +26,14 @@ import com.timkrest.underlay.blurredUnderlay
 import com.timkrest.underlay.rememberUnderlayState
 import kotlin.math.roundToInt
 
-private val CARD_SHAPE = RoundedCornerShape(28.dp)
-private val CARD_TINT = Color.Black.copy(alpha = 0.28f)
-private val CARD_WIDTH = 320.dp
+internal val CARD_WIDTH = 320.dp
+internal val CARD_TINT = Color.Black.copy(alpha = 0.28f)
+internal val CARD_CORNER = 28.dp
+internal val CARD_PADDING = 24.dp
+internal val CARD_SPACING = 14.dp
+internal val CARD_SHAPE = RoundedCornerShape(CARD_CORNER)
+internal val CARD_SECONDARY_TEXT = Color.White.copy(alpha = 0.76f)
+private val CARD_BORDER = Color.White.copy(alpha = 0.16f)
 private const val DISABLED_ALPHA = 0.38f
 
 @Composable
@@ -39,12 +45,12 @@ internal fun UnderlayCard(
     onRefresh: () -> Unit,
     onBlurRadiusChange: (Dp) -> Unit,
     modifier: Modifier = Modifier,
+    shape: Shape = CARD_SHAPE,
     liveSnapshot: Boolean = false,
 ) {
     Column(
         modifier = modifier
-            .width(CARD_WIDTH)
-            .clip(CARD_SHAPE)
+            .clip(shape)
             .blurredUnderlay(
                 blurRadius = blurRadius,
                 tint = CARD_TINT,
@@ -52,9 +58,9 @@ internal fun UnderlayCard(
                 liveSnapshot = liveSnapshot,
                 state = underlayState,
             )
-            .border(1.dp, Color.White.copy(alpha = 0.16f), CARD_SHAPE)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+            .border(1.dp, CARD_BORDER, shape)
+            .padding(CARD_PADDING),
+        verticalArrangement = Arrangement.spacedBy(CARD_SPACING),
     ) {
         Text(
             text = kind.label,
@@ -64,12 +70,12 @@ internal fun UnderlayCard(
         UnderlaySourceBadge(underlayState.source)
         Text(
             text = kind.explanation,
-            color = Color.White.copy(alpha = 0.76f),
+            color = CARD_SECONDARY_TEXT,
             style = MaterialTheme.typography.bodyMedium,
         )
         Text(
             text = "blurRadius = ${blurRadius.value.roundToInt()}.dp",
-            color = Color.White.copy(alpha = 0.76f),
+            color = CARD_SECONDARY_TEXT,
             style = MaterialTheme.typography.bodySmall,
         )
         BlurRadiusSlider(blurRadius = blurRadius, onBlurRadiusChange = onBlurRadiusChange)
@@ -101,6 +107,7 @@ private fun UnderlayCardPreview() {
             onDismiss = { },
             onRefresh = { },
             onBlurRadiusChange = { },
+            modifier = Modifier.width(CARD_WIDTH),
         )
     }
 }

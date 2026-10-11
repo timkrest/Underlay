@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.timkrest.underlay.UnderlaySource
 import com.timkrest.underlay.rememberUnderlayState
 
 private val BACKDROP_GUTTER = 12.dp
@@ -31,6 +33,7 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
     var openKind by rememberSaveable { mutableStateOf<OverlayKind?>(null) }
     var backdropShift by rememberSaveable { mutableIntStateOf(0) }
     var isLiveSnapshot by rememberSaveable { mutableStateOf(false) }
+    var viewDialogSource by remember { mutableStateOf<UnderlaySource?>(null) }
     val underlayState = rememberUnderlayState()
     val blurRadius = blurRadiusDp.dp
     val tiles = rememberGradientTiles()
@@ -41,7 +44,7 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
             bottomBar = {
                 ControlsPanel(
                     blurRadius = blurRadius,
-                    overlaySource = underlayState.source,
+                    overlaySource = underlayState.source ?: viewDialogSource,
                     areTilesHardware = tiles?.areHardware,
                     isLiveSnapshot = isLiveSnapshot,
                     onBlurRadiusChange = { blurRadiusDp = it.value },
@@ -70,6 +73,7 @@ internal fun SampleScreen(modifier: Modifier = Modifier) {
             blurRadius = blurRadius,
             liveSnapshot = isLiveSnapshot,
             underlayState = underlayState,
+            onViewSourceChange = { source -> viewDialogSource = source },
             onRefresh = {
                 backdropShift++
                 underlayState.refresh()
